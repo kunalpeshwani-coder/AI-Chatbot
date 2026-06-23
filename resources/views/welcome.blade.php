@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Chatbot</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="min-h-screen bg-gradient-to-br from-navy-900 via-navy-800 to-navy-900 text-white flex flex-col">
+
+    {{-- Nav --}}
+    <nav class="flex items-center justify-between px-8 py-5">
+        <div class="flex items-center gap-2">
+            <svg class="w-8 h-8 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3z"/>
+            </svg>
+            <span class="text-xl font-semibold tracking-tight">AI Chatbot</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+            @auth
+                <a href="{{ route('chat') }}"
+                   class="px-4 py-2 bg-gold-600 hover:bg-gold-500 rounded-lg text-sm font-medium transition">
+                    Go to Chat &rarr;
+                </a>
+            @else
+                <a href="{{ route('login') }}"
+                   class="px-4 py-2 bg-gold-600 hover:bg-gold-500 rounded-lg text-sm font-medium transition">
+                    Log In
+                </a>
+                <a href="{{ route('register') }}"
+                   class="px-4 py-2 bg-gold-600 hover:bg-gold-500 rounded-lg text-sm font-medium transition">
+                    Sign Up
+                </a>
+            @endauth
+        </div>
+    </nav>
+
+    {{-- Hero --}}
+    <main class="flex-1 flex flex-col items-center justify-center text-center px-6 py-20">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-600/15 border border-gold-700 text-gold-300 text-xs font-medium mb-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse"></span>
+            Powered by OpenAI &bull; Claude &bull; Gemini
+        </div>
+
+        <h1 class="text-5xl sm:text-6xl font-bold tracking-tight mb-5 leading-tight">
+            Chat with <span class="gold-gradient-text">AI</span>,<br>your way.
+        </h1>
+
+        <p class="text-navy-300 text-lg max-w-xl mb-10">
+            A configurable AI chatbot that works with multiple providers.
+            Choose your model, start a conversation, and let AI do the rest.
+        </p>
+
+        @auth
+            <a href="{{ route('chat') }}"
+               class="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 rounded-xl text-base font-semibold transition shadow-lg shadow-black/40">
+                Open Chatbot &rarr;
+            </a>
+        @else
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <a href="{{ route('register') }}"
+                   class="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 rounded-xl text-base font-semibold transition shadow-lg shadow-black/40">
+                    Get Started &mdash; it&rsquo;s free
+                </a>
+                <a href="{{ route('login') }}"
+                   class="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 rounded-xl text-base font-semibold transition shadow-lg shadow-black/40">
+                    Log In
+                </a>
+            </div>
+        @endauth
+    </main>
+
+    {{-- Feature cards --}}
+    <section class="max-w-4xl mx-auto w-full px-6 pb-24 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="rounded-xl bg-white/5 border border-white/10 p-5">
+            <div class="text-2xl mb-3">🤖</div>
+            <h3 class="font-semibold mb-1">Multiple AI Providers</h3>
+            <p class="text-navy-300 text-sm">Switch between OpenAI, Anthropic Claude, and Google Gemini with a single config change.</p>
+        </div>
+        <div class="rounded-xl bg-white/5 border border-white/10 p-5">
+            <div class="text-2xl mb-3">💬</div>
+            <h3 class="font-semibold mb-1">Conversation History</h3>
+            <p class="text-navy-300 text-sm">All your conversations are saved so you can pick up right where you left off.</p>
+        </div>
+        <div class="rounded-xl bg-white/5 border border-white/10 p-5">
+            <div class="text-2xl mb-3">⚡</div>
+            <h3 class="font-semibold mb-1">Fast &amp; Simple</h3>
+            <p class="text-navy-300 text-sm">Built with Laravel and React for a clean, responsive experience.</p>
+        </div>
+    </section>
+
+    {{-- Footer --}}
+    <footer class="text-center text-navy-300 text-xs pb-6">
+        AI Chatbot &mdash; Learning Project
+    </footer>
+
+</body>
+</html>
