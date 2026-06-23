@@ -10,29 +10,12 @@
 <body class="min-h-screen bg-gradient-to-br from-navy-900 via-navy-800 to-navy-900 text-white flex flex-col">
 
     {{-- Nav --}}
-    <nav class="flex items-center justify-between px-8 py-5">
-        <div class="flex items-center gap-2">
-            <svg class="w-8 h-8 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3z"/>
-            </svg>
-            <span class="text-xl font-semibold tracking-tight">AI Chatbot</span>
-        </div>
-
+    <nav class="flex items-center justify-end px-8 py-5">
         <div class="flex items-center gap-3">
             @auth
                 <a href="{{ route('chat') }}"
                    class="px-4 py-2 bg-gold-600 hover:bg-gold-500 rounded-lg text-sm font-medium transition">
                     Go to Chat &rarr;
-                </a>
-            @else
-                <a href="{{ route('login') }}"
-                   class="px-4 py-2 bg-gold-600 hover:bg-gold-500 rounded-lg text-sm font-medium transition">
-                    Log In
-                </a>
-                <a href="{{ route('register') }}"
-                   class="px-4 py-2 bg-gold-600 hover:bg-gold-500 rounded-lg text-sm font-medium transition">
-                    Sign Up
                 </a>
             @endauth
         </div>
