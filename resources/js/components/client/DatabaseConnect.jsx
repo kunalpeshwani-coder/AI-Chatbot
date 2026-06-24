@@ -6,6 +6,20 @@ import {
 
 const EMPTY_FORM = { driver: 'mysql', host: '', port: '3306', database: '', username: '', password: '' };
 
+const DEFAULT_PORTS = {
+    mysql: '3306', mariadb: '3306', pgsql: '5432', sqlsrv: '1433', oci: '1521', sqlite: '', mongodb: '27017',
+};
+
+const DRIVER_OPTIONS = [
+    { value: 'mysql',   label: 'MySQL' },
+    { value: 'mariadb', label: 'MariaDB' },
+    { value: 'pgsql',   label: 'PostgreSQL' },
+    { value: 'sqlsrv',  label: 'SQL Server' },
+    { value: 'oci',     label: 'Oracle' },
+    { value: 'sqlite',  label: 'SQLite (file)' },
+    { value: 'mongodb', label: 'MongoDB' },
+];
+
 const STATUS_STYLES = {
     connected: 'text-emerald-400',
     pending:   'text-yellow-400',
@@ -16,6 +30,8 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
     const [connections, setConnections] = useState([]);
     const [loading, setLoading]         = useState(true);
     const [form, setForm]               = useState(EMPTY_FORM);
+    const [credentialsFieldKey, setCredentialsFieldKey] = useState(0);
+    const [pendingCredentials, setPendingCredentials] = useState(null);
     const [tables, setTables]           = useState(null);
     const [selectedTables, setSelected] = useState([]);
     const [testing, setTesting]         = useState(false);
@@ -34,8 +50,10 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
         getDatabaseConnections(chatbot.id).then(setConnections).finally(() => setLoading(false));
     }, [chatbot?.id]);
 
+    const isFileBased = form.driver === 'sqlite';
+
     const handleDriverChange = (driver) => {
-        setForm(f => ({ ...f, driver, port: driver === 'mysql' ? '3306' : '5432' }));
+        setForm(f => ({ ...f, driver, port: DEFAULT_PORTS[driver] ?? '' }));
     };
 
     const handleTest = async (e) => {
@@ -44,27 +62,32 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
         setError(null);
         setTables(null);
         setSelected([]);
+        const credentials = { ...form, port: Number(form.port) };
         try {
-            const { tables } = await testDatabaseConnection(chatbot.id, { ...form, port: Number(form.port) });
+            const { tables } = await testDatabaseConnection(chatbot.id, credentials);
             setTables(tables);
             setSelected(tables);
+            setPendingCredentials(credentials);
         } catch (err) {
             setError(err.response?.data?.message ?? err.message);
         } finally {
             setTesting(false);
+            setForm(f => ({ ...f, username: '', password: '' }));
+            setCredentialsFieldKey(k => k + 1);
         }
     };
 
     const handleConnect = async () => {
-        if (selectedTables.length === 0) return;
+        if (selectedTables.length === 0 || !pendingCredentials) return;
         setSaving(true);
         setError(null);
         try {
             const connection = await createDatabaseConnection(chatbot.id, {
-                ...form, port: Number(form.port), tables: selectedTables,
+                ...pendingCredentials, tables: selectedTables,
             });
             setConnections(prev => [connection, ...prev]);
             setForm(EMPTY_FORM);
+            setPendingCredentials(null);
             setTables(null);
             setSelected([]);
             onUpdate?.();
@@ -72,6 +95,8 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
             setError(err.response?.data?.message ?? err.message);
         } finally {
             setSaving(false);
+            setPendingCredentials(null);
+            setCredentialsFieldKey(k => k + 1);
         }
     };
 
@@ -144,7 +169,7 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
         <div className="border-t border-white/10 pt-5 mt-5 flex-shrink-0">
             <h3 className="text-sm font-semibold text-white mb-1">Connect a Database</h3>
             <p className="text-xs text-navy-300 mb-4">
-                Pull data straight from your MySQL or PostgreSQL database into the knowledge base.
+                Pull data straight from your MySQL, MariaDB, PostgreSQL, SQL Server, Oracle, SQLite, or MongoDB database into the knowledge base.
                 Select the tables you want — they'll sync as searchable content for your chatbot.
             </p>
 
@@ -237,35 +262,62 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
                         onChange={e => handleDriverChange(e.target.value)}
                         className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-gold-500"
                     >
-                        <option value="mysql">MySQL</option>
-                        <option value="pgsql">PostgreSQL</option>
+                        {DRIVER_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                     </select>
                     <input
-                        type="text" placeholder="Database name" value={form.database} required
+                        type="text" placeholder={isFileBased ? 'Database file path (e.g. /path/to/app.sqlite)' : 'Database name'}
+                        value={form.database} required
                         onChange={e => setForm(f => ({ ...f, database: e.target.value }))}
-                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                        className={`bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500 ${isFileBased ? 'col-span-2' : ''}`}
                     />
-                    <input
-                        type="text" placeholder="Host (e.g. localhost)" value={form.host} required
-                        onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
-                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
-                    />
-                    <input
-                        type="number" placeholder="Port" value={form.port} required
-                        onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
-                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
-                    />
-                    <input
-                        type="text" placeholder="Username" value={form.username} required
-                        onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
-                    />
-                    <input
-                        type="password" placeholder="Password" value={form.password}
-                        onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
-                    />
+
+                    {!isFileBased && (
+                        <>
+                            <input
+                                type="text" placeholder="Host (e.g. localhost)" value={form.host} required
+                                onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
+                                className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                            />
+                            <input
+                                type="number" placeholder="Port" value={form.port} required
+                                onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
+                                className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                            />
+                            <input
+                                key={`username-${credentialsFieldKey}`}
+                                type="text" placeholder={form.driver === 'mongodb' ? 'Username (optional)' : 'Username'}
+                                defaultValue={form.username} required={form.driver !== 'mongodb'}
+                                autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
+                                name="db_username_no_autofill"
+                                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                                className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                            />
+                            <input
+                                key={`password-${credentialsFieldKey}`}
+                                type="password" placeholder="Password" defaultValue={form.password}
+                                autoComplete="new-password"
+                                name="db_password_no_autofill"
+                                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                                className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                            />
+                        </>
+                    )}
                 </div>
+
+                {(form.driver === 'sqlsrv' || form.driver === 'oci') && (
+                    <p className="text-xs text-yellow-400/80">
+                        Note: {form.driver === 'sqlsrv' ? 'SQL Server' : 'Oracle'} support requires the matching PHP
+                        PDO extension ({form.driver === 'sqlsrv' ? 'pdo_sqlsrv' : 'pdo_oci'}) to be enabled on the server.
+                    </p>
+                )}
+                {form.driver === 'mongodb' && (
+                    <p className="text-xs text-yellow-400/80">
+                        Note: MongoDB support requires the "mongodb" PHP extension and the "mongodb/mongodb"
+                        Composer package to be installed on the server.
+                    </p>
+                )}
 
                 {error && (
                     <div className="px-3 py-2 bg-red-900/40 border border-red-700 rounded-lg text-red-300 text-sm">

@@ -114,13 +114,23 @@ class ChatbotDatabaseController extends Controller
 
     private function validateCredentials(Request $request): array
     {
-        return $request->validate([
-            'driver'   => ['required', 'string', 'in:mysql,pgsql'],
-            'host'     => ['required', 'string', 'max:255'],
-            'port'     => ['required', 'integer', 'min:1', 'max:65535'],
+        $isFileBased = $request->input('driver') === 'sqlite';
+
+        $isNoAuth = $isFileBased || $request->input('driver') === 'mongodb';
+
+        $data = $request->validate([
+            'driver'   => ['required', 'string', 'in:mysql,mariadb,pgsql,sqlsrv,oci,sqlite,mongodb'],
+            'host'     => [$isFileBased ? 'nullable' : 'required', 'nullable', 'string', 'max:255'],
+            'port'     => [$isFileBased ? 'nullable' : 'required', 'nullable', 'integer', 'min:1', 'max:65535'],
             'database' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255'],
-            'password' => ['nullable','max:255'],
+            'username' => [$isNoAuth ? 'nullable' : 'required', 'nullable', 'string', 'max:255'],
+            'password' => ['nullable', 'max:255'],
         ]);
+
+        $data['host']     ??= '';
+        $data['port']     ??= 0;
+        $data['username'] ??= '';
+
+        return $data;
     }
 }   

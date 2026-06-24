@@ -83,7 +83,7 @@ export default function TestChat({ chatbot }) {
                             className="flex-shrink-0 w-9 h-9 rounded-full bg-gold-600 hover:bg-gold-500 disabled:opacity-40 flex items-center justify-center transition"
                         >
                             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
                             </svg>
                         </button>
                     </div>
