@@ -1,14 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getMyChatbots, createMyChatbot, deleteMyChatbot } from '../api';
 import CreateChatbotForm from './client/CreateChatbotForm';
 import ChatbotOverview from './client/ChatbotOverview';
+
+const MIN_SIDEBAR_WIDTH = 200;
+const MAX_SIDEBAR_WIDTH = 420;
 
 export default function ClientDashboard() {
     const [chatbots, setChatbots]           = useState([]);
     const [activeId, setActiveId]           = useState(null);
     const [loading, setLoading]             = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
+    const [sidebarWidth, setSidebarWidth]   = useState(256);
+    const [sidebarHidden, setSidebarHidden] = useState(false);
+    const resizing = useRef(false);
     const userName = document.querySelector('meta[name="user-name"]')?.content ?? 'there';
+
+    const handleResizeStart = useCallback((e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resizing.current = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    }, []);
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!resizing.current) return;
+            const next = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, e.clientX));
+            setSidebarWidth(next);
+        };
+        const handleMouseUp = () => {
+            if (!resizing.current) return;
+            resizing.current = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, []);
 
     useEffect(() => {
         getMyChatbots()
@@ -37,9 +71,14 @@ export default function ClientDashboard() {
     const showForm = showCreateForm || (!loading && chatbots.length === 0);
 
     return (
-        <div className="h-screen flex bg-navy-950 text-white">
-            {/* Side nav */}
-            <aside className="w-64 flex-shrink-0 bg-navy-900/60 border-r border-white/10 flex flex-col">
+        <div className="h-screen flex bg-navy-800 text-white">
+            {/* Side nav — click anywhere on it to hide/show */}
+            <aside
+                onClick={() => setSidebarHidden(v => !v)}
+                title={sidebarHidden ? 'Show sidebar' : 'Click to hide sidebar'}
+                style={{ width: sidebarHidden ? 0 : sidebarWidth }}
+                className="relative flex-shrink-0 bg-navy-950 border-r border-white/10 flex flex-col overflow-hidden transition-[width] duration-200 cursor-pointer"
+            >
                 <div className="flex items-center gap-2.5 px-5 py-5">
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-gold-400 to-gold-700 flex items-center justify-center flex-shrink-0 shadow-md shadow-black/50 ring-1 ring-white/10">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,13 +86,13 @@ export default function ClientDashboard() {
                                   d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3z"/>
                         </svg>
                     </div>
-                    <span className="font-semibold text-sm">AI Chatbot</span>
+                    <span className="font-semibold text-sm whitespace-nowrap">AI Chatbot</span>
                 </div>
 
                 <div className="flex items-center justify-between px-4 mt-2 mb-1">
                     <span className="text-xs font-medium text-navy-300 uppercase tracking-wide">My Chatbots</span>
                     <button
-                        onClick={() => { setShowCreateForm(true); setActiveId(null); }}
+                        onClick={(e) => { e.stopPropagation(); setShowCreateForm(true); setActiveId(null); }}
                         className="text-sm px-4 py-2.5 bg-gold-600 hover:bg-gold-500 rounded-xl transition font-medium"
                     >
                         + New
@@ -84,7 +123,7 @@ export default function ClientDashboard() {
                         </div>
                         <span className="text-sm text-navy-200 truncate">{userName}</span>
                     </div>
-                    <form method="POST" action="/logout">
+                    <form method="POST" action="/logout" onClick={(e) => e.stopPropagation()}>
                         <input type="hidden" name="_token" value={document.querySelector('meta[name="csrf-token"]')?.content} />
                         <button type="submit"
                             className="w-full text-left text-xs text-navy-300 hover:text-red-300 transition flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-red-500/10">
@@ -96,10 +135,21 @@ export default function ClientDashboard() {
                         </button>
                     </form>
                 </div>
+
+                {/* Drag handle to resize the sidebar */}
+                {!sidebarHidden && (
+                    <div
+                        onMouseDown={handleResizeStart}
+                        className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize group flex items-center justify-center"
+                        title="Drag to resize"
+                    >
+                        <div className="w-0.5 h-full bg-transparent group-hover:bg-gold-500/50 transition-colors" />
+                    </div>
+                )}
             </aside>
 
             {/* Main content */}
-            <main className="flex-1 flex flex-col overflow-hidden min-h-0 p-8">
+            <main className="flex-1 flex flex-col overflow-hidden min-h-0 bg-navy-800 p-8">
                 {loading ? (
                     <div className="flex-1 flex items-center justify-center">
                         <p className="text-navy-300 text-sm">Loading…</p>
@@ -134,7 +184,7 @@ function ChatbotNavItem({ chatbot, active, onSelect, onDelete }) {
             className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition ${
                 active ? 'bg-gold-600/20 text-white ring-1 ring-gold-500/40' : 'text-navy-300 hover:bg-white/5 hover:text-navy-200'
             }`}
-            onClick={onSelect}
+            onClick={e => { e.stopPropagation(); onSelect(); }}
         >
             <svg className={`w-4 h-4 flex-shrink-0 ${active ? 'text-gold-400' : 'text-navy-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

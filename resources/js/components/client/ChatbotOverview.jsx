@@ -17,7 +17,7 @@ export default function ChatbotOverview({ chatbot, onUpdate }) {
     return (
         <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-6 flex-shrink-0 bg-navy-700 border border-white/10 rounded-2xl px-6 py-5 shadow-md shadow-black/20">
                 <div>
                     <div className="flex items-center gap-2.5 mb-1">
                         <h1 className="text-xl font-semibold text-white">{chatbot.name}</h1>

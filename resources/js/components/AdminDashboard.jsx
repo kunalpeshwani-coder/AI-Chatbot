@@ -6,12 +6,12 @@ export default function AdminDashboard() {
     const userName = document.querySelector('meta[name="user-name"]')?.content ?? 'Admin';
 
     return (
-        <div className="h-screen flex bg-navy-950 text-white">
+        <div className="h-screen flex bg-navy-800 text-white">
             {/* Side nav — click to collapse/expand */}
             <aside
                 onClick={() => setCollapsed(v => !v)}
                 title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                className={`flex-shrink-0 bg-navy-900/60 border-r border-white/10 flex flex-col transition-all duration-200 cursor-pointer hover:bg-navy-900/80 ${
+                className={`flex-shrink-0 bg-navy-950 border-r border-white/10 flex flex-col transition-all duration-200 cursor-pointer hover:bg-navy-900 ${
                     collapsed ? 'w-16' : 'w-60'
                 }`}
             >
@@ -51,8 +51,10 @@ export default function AdminDashboard() {
             </aside>
 
             {/* Main content */}
-            <main className="flex-1 flex flex-col overflow-hidden min-h-0 p-6">
-                <h1 className="text-xl font-semibold text-white mb-5 flex-shrink-0">Clients</h1>
+            <main className="flex-1 flex flex-col overflow-hidden min-h-0 bg-navy-800 p-6">
+                <div className="flex-shrink-0 bg-navy-700 border border-white/10 rounded-2xl px-6 py-5 mb-5 shadow-md shadow-black/20">
+                    <h1 className="text-xl font-semibold text-white">Clients</h1>
+                </div>
                 <ClientsManager />
             </main>
         </div>
