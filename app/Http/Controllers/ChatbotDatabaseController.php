@@ -67,6 +67,41 @@ class ChatbotDatabaseController extends Controller
         return response()->json($connection->fresh());
     }
 
+    // Lists tables on an already-connected database, so the client can pick more to add.
+    public function availableTables(Request $request, Chatbot $chatbot, DatabaseConnection $connection): JsonResponse
+    {
+        abort_if($chatbot->user_id !== $request->user()->id, 403);
+        abort_if($connection->chatbot_id !== $chatbot->id, 404);
+
+        try {
+            $tables = $this->sync->listTablesForConnection($connection);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['tables' => $tables]);
+    }
+
+    // Adds more tables to an existing connection and syncs the new ones in.
+    public function addTables(Request $request, Chatbot $chatbot, DatabaseConnection $connection): JsonResponse
+    {
+        abort_if($chatbot->user_id !== $request->user()->id, 403);
+        abort_if($connection->chatbot_id !== $chatbot->id, 404);
+
+        $data = $request->validate([
+            'tables'   => ['required', 'array', 'min:1'],
+            'tables.*' => ['string'],
+        ]);
+
+        $connection->update([
+            'tables' => array_values(array_unique([...$connection->tables, ...$data['tables']])),
+        ]);
+
+        $this->sync->sync($connection);
+
+        return response()->json($connection->fresh());
+    }
+
     public function destroy(Request $request, Chatbot $chatbot, DatabaseConnection $connection): JsonResponse
     {
         abort_if($chatbot->user_id !== $request->user()->id, 403);

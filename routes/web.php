@@ -69,6 +69,8 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('/my-chatbots/{chatbot}/database-connections/test', [ChatbotDatabaseController::class, 'testConnection']);
     Route::post('/my-chatbots/{chatbot}/database-connections', [ChatbotDatabaseController::class, 'store']);
     Route::post('/my-chatbots/{chatbot}/database-connections/{connection}/sync', [ChatbotDatabaseController::class, 'resync']);
+    Route::get('/my-chatbots/{chatbot}/database-connections/{connection}/tables', [ChatbotDatabaseController::class, 'availableTables']);
+    Route::post('/my-chatbots/{chatbot}/database-connections/{connection}/tables', [ChatbotDatabaseController::class, 'addTables']);
     Route::delete('/my-chatbots/{chatbot}/database-connections/{connection}', [ChatbotDatabaseController::class, 'destroy']);
 
     // Admin-only routes

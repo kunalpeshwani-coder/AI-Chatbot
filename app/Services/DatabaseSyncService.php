@@ -23,6 +23,19 @@ class DatabaseSyncService
         };
     }
 
+    // Lists tables available on an already-saved connection, using its stored credentials.
+    public function listTablesForConnection(DatabaseConnection $connection): array
+    {
+        return $this->listTables(
+            $connection->driver,
+            $connection->host,
+            $connection->port,
+            $connection->database,
+            $connection->username,
+            $connection->password,
+        );
+    }
+
     // Pulls the selected tables and turns each into a Document the chatbot can search over.
     public function sync(DatabaseConnection $connection): void
     {

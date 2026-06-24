@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { testChatbotMessage } from '../../api';
+import Markdown from '../Markdown';
 
 export default function TestChat({ chatbot }) {
     const [messages, setMessages] = useState([]);
@@ -99,10 +100,14 @@ function Message({ message }) {
             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold ${isUser ? 'bg-gold-600' : 'bg-navy-700'}`}>
                 {isUser ? 'Y' : 'AI'}
             </div>
-            <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
+            <div className={`max-w-[75%] px-4 py-3 rounded-2xl ${
                 isUser ? 'bg-gold-600 text-white rounded-tr-sm' : 'bg-navy-800 border border-white/10 text-white rounded-tl-sm'
             }`}>
-                {message.content}
+                {isUser ? (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+                ) : (
+                    <Markdown content={message.content} />
+                )}
             </div>
         </div>
     );

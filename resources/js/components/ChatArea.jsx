@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import MessageInput from './MessageInput';
+import Markdown from './Markdown';
 
 const PROVIDER_COLORS = {
     openai: 'bg-emerald-900/50 text-emerald-300 border-emerald-700',
@@ -101,12 +102,16 @@ function Message({ message, providerLabel }) {
             </div>
 
             {/* Bubble */}
-            <div className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
+            <div className={`max-w-[70%] px-4 py-3 rounded-2xl ${
                 isUser
                     ? 'bg-gold-600 text-white rounded-tr-sm'
                     : 'bg-navy-800 border border-white/10 text-white rounded-tl-sm'
             }`}>
-                {message.content}
+                {isUser ? (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+                ) : (
+                    <Markdown content={message.content} />
+                )}
             </div>
         </div>
     );

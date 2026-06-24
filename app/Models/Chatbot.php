@@ -46,7 +46,12 @@ class Chatbot extends Model
 
     public function getSystemPrompt(): string
     {
-        $parts = ["You are a helpful AI assistant for \"{$this->name}\"."];
+        $parts = [
+            "You are a helpful AI assistant for \"{$this->name}\".",
+            "\nFormat every response in Markdown: use headings or bold for key labels, bullet/numbered lists for "
+                . "steps or multiple items, and tables when presenting tabular or row-based data (e.g. records "
+                . "pulled from a database). Keep prose paragraphs short.",
+        ];
 
         if ($this->description) {
             $parts[] = $this->description;

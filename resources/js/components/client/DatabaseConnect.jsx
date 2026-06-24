@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     getDatabaseConnections, testDatabaseConnection, createDatabaseConnection,
-    syncDatabaseConnection, deleteDatabaseConnection,
+    syncDatabaseConnection, deleteDatabaseConnection, getAvailableTables, addDatabaseTables,
 } from '../../api';
 
 const EMPTY_FORM = { driver: 'mysql', host: '', port: '3306', database: '', username: '', password: '' };
@@ -22,6 +22,12 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
     const [saving, setSaving]           = useState(false);
     const [error, setError]             = useState(null);
     const [syncingId, setSyncingId]     = useState(null);
+    const [addingTablesFor, setAddingTablesFor] = useState(null);
+    const [moreTables, setMoreTables]   = useState(null);
+    const [moreSelected, setMoreSelected] = useState([]);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [savingMore, setSavingMore]   = useState(false);
+    const [moreError, setMoreError]     = useState(null);
 
     useEffect(() => {
         if (!chatbot?.id) return;
@@ -91,6 +97,49 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
         setSelected(prev => prev.includes(table) ? prev.filter(t => t !== table) : [...prev, table]);
     };
 
+    const handleOpenAddTables = async (connection) => {
+        if (addingTablesFor === connection.id) {
+            setAddingTablesFor(null);
+            setMoreTables(null);
+            return;
+        }
+        setAddingTablesFor(connection.id);
+        setMoreTables(null);
+        setMoreSelected([]);
+        setMoreError(null);
+        setLoadingMore(true);
+        try {
+            const { tables } = await getAvailableTables(chatbot.id, connection.id);
+            setMoreTables(tables.filter(t => !connection.tables.includes(t)));
+        } catch (err) {
+            setMoreError(err.response?.data?.message ?? err.message);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+    const toggleMoreTable = (table) => {
+        setMoreSelected(prev => prev.includes(table) ? prev.filter(t => t !== table) : [...prev, table]);
+    };
+
+    const handleAddTables = async (connection) => {
+        if (moreSelected.length === 0) return;
+        setSavingMore(true);
+        setMoreError(null);
+        try {
+            const updated = await addDatabaseTables(chatbot.id, connection.id, moreSelected);
+            setConnections(prev => prev.map(c => c.id === updated.id ? updated : c));
+            setAddingTablesFor(null);
+            setMoreTables(null);
+            setMoreSelected([]);
+            onUpdate?.();
+        } catch (err) {
+            setMoreError(err.response?.data?.message ?? err.message);
+        } finally {
+            setSavingMore(false);
+        }
+    };
+
     return (
         <div className="border-t border-white/10 pt-5 mt-5 flex-shrink-0">
             <h3 className="text-sm font-semibold text-white mb-1">Connect a Database</h3>
@@ -102,33 +151,80 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
             {!loading && connections.length > 0 && (
                 <div className="space-y-2 mb-4">
                     {connections.map(conn => (
-                        <div key={conn.id} className="flex items-center gap-3 bg-navy-900/60 border border-white/10 rounded-lg px-4 py-3">
-                            <span className="text-xl flex-shrink-0">🗄️</span>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm text-white truncate">{conn.database} <span className="text-navy-400">({conn.driver})</span></p>
-                                <p className="text-xs text-navy-300">
-                                    {conn.tables.length} table{conn.tables.length !== 1 ? 's' : ''} ·{' '}
-                                    <span className={STATUS_STYLES[conn.status] ?? 'text-navy-300'}>{conn.status}</span>
-                                    {conn.last_synced_at && <> · synced {new Date(conn.last_synced_at).toLocaleString()}</>}
-                                </p>
-                                {conn.status === 'failed' && conn.error_message && (
-                                    <p className="text-xs text-red-400 truncate" title={conn.error_message}>{conn.error_message}</p>
-                                )}
+                        <div key={conn.id} className="bg-navy-900/60 border border-white/10 rounded-lg px-4 py-3">
+                            <div className="flex items-center gap-3">
+                                <span className="text-xl flex-shrink-0">🗄️</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-white truncate">{conn.database} <span className="text-navy-400">({conn.driver})</span></p>
+                                    <p className="text-xs text-navy-300">
+                                        {conn.tables.length} table{conn.tables.length !== 1 ? 's' : ''} ·{' '}
+                                        <span className={STATUS_STYLES[conn.status] ?? 'text-navy-300'}>{conn.status}</span>
+                                        {conn.last_synced_at && <> · synced {new Date(conn.last_synced_at).toLocaleString()}</>}
+                                    </p>
+                                    {conn.status === 'failed' && conn.error_message && (
+                                        <p className="text-xs text-red-400 truncate" title={conn.error_message}>{conn.error_message}</p>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => handleOpenAddTables(conn)}
+                                    className="text-xs px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-navy-200 transition flex-shrink-0"
+                                >
+                                    {addingTablesFor === conn.id ? 'Cancel' : '+ Add Tables'}
+                                </button>
+                                <button
+                                    onClick={() => handleResync(conn)}
+                                    disabled={syncingId === conn.id}
+                                    className="text-xs px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-navy-200 transition flex-shrink-0 disabled:opacity-50"
+                                >
+                                    {syncingId === conn.id ? 'Syncing…' : 'Re-sync'}
+                                </button>
+                                <button onClick={() => handleDisconnect(conn)}
+                                    className="p-1.5 rounded hover:bg-white/10 text-navy-300 hover:text-red-400 transition flex-shrink-0">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
                             </div>
-                            <button
-                                onClick={() => handleResync(conn)}
-                                disabled={syncingId === conn.id}
-                                className="text-xs px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-navy-200 transition flex-shrink-0 disabled:opacity-50"
-                            >
-                                {syncingId === conn.id ? 'Syncing…' : 'Re-sync'}
-                            </button>
-                            <button onClick={() => handleDisconnect(conn)}
-                                className="p-1.5 rounded hover:bg-white/10 text-navy-300 hover:text-red-400 transition flex-shrink-0">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
+
+                            {addingTablesFor === conn.id && (
+                                <div className="border-t border-white/10 mt-3 pt-3">
+                                    {loadingMore ? (
+                                        <p className="text-sm text-navy-300">Loading tables…</p>
+                                    ) : moreError ? (
+                                        <div className="px-3 py-2 bg-red-900/40 border border-red-700 rounded-lg text-red-300 text-sm">
+                                            {moreError}
+                                        </div>
+                                    ) : moreTables && moreTables.length === 0 ? (
+                                        <p className="text-sm text-navy-300">All tables from this database are already added.</p>
+                                    ) : moreTables ? (
+                                        <>
+                                            <p className="text-xs text-navy-300 mb-2">Select more tables to add ({moreSelected.length} selected):</p>
+                                            <div className="max-h-40 overflow-y-auto space-y-1 mb-3">
+                                                {moreTables.map(table => (
+                                                    <label key={table} className="flex items-center gap-2 text-sm text-navy-200 px-2 py-1 rounded hover:bg-white/5 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={moreSelected.includes(table)}
+                                                            onChange={() => toggleMoreTable(table)}
+                                                            className="rounded border-white/20 bg-navy-800 text-gold-600 focus:ring-gold-500"
+                                                        />
+                                                        {table}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAddTables(conn)}
+                                                disabled={savingMore || moreSelected.length === 0}
+                                                className="px-4 py-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 rounded-lg text-sm font-medium transition"
+                                            >
+                                                {savingMore ? 'Adding…' : `Add ${moreSelected.length} Table${moreSelected.length !== 1 ? 's' : ''}`}
+                                            </button>
+                                        </>
+                                    ) : null}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
