@@ -29,37 +29,12 @@ export const getMessages = (convId) =>
 export const sendMessage = (convId, content) =>
     api.post(`/conversations/${convId}/messages`, { content }).then(r => r.data);
 
-// Admin — Domains
-export const adminGetDomains = () =>
-    api.get('/admin/domains').then(r => r.data);
-
-export const adminCreateDomain = (data) =>
-    api.post('/admin/domains', data).then(r => r.data);
-
-export const adminUpdateDomain = (id, data) =>
-    api.put(`/admin/domains/${id}`, data).then(r => r.data);
-
-export const adminDeleteDomain = (id) =>
-    api.delete(`/admin/domains/${id}`).then(r => r.data);
-
-// Admin — Documents
-export const adminGetDocuments = (domainId) =>
-    api.get(`/admin/domains/${domainId}/documents`).then(r => r.data);
-
-export const adminUploadDocument = (domainId, file) => {
-    const form = new FormData();
-    form.append('file', file);
-    return api.post(`/admin/domains/${domainId}/documents`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    }).then(r => r.data);
-};
-
-export const adminDeleteDocument = (domainId, docId) =>
-    api.delete(`/admin/domains/${domainId}/documents/${docId}`).then(r => r.data);
-
 // Admin — Clients
 export const adminGetClients = () =>
     api.get('/admin/clients').then(r => r.data);
+
+export const adminGetClient = (clientId) =>
+    api.get(`/admin/clients/${clientId}`).then(r => r.data);
 
 export const adminUpdateClientPackage = (clientId, pkg) =>
     api.put(`/admin/clients/${clientId}/package`, { package: pkg }).then(r => r.data);
@@ -96,3 +71,19 @@ export const addChatbotUrl = (chatbotId, url) =>
 
 export const deleteChatbotDocument = (chatbotId, docId) =>
     api.delete(`/my-chatbots/${chatbotId}/documents/${docId}`).then(r => r.data);
+
+// Client — connect a database as a knowledge source
+export const getDatabaseConnections = (chatbotId) =>
+    api.get(`/my-chatbots/${chatbotId}/database-connections`).then(r => r.data);
+
+export const testDatabaseConnection = (chatbotId, credentials) =>
+    api.post(`/my-chatbots/${chatbotId}/database-connections/test`, credentials).then(r => r.data);
+
+export const createDatabaseConnection = (chatbotId, data) =>
+    api.post(`/my-chatbots/${chatbotId}/database-connections`, data).then(r => r.data);
+
+export const syncDatabaseConnection = (chatbotId, connectionId) =>
+    api.post(`/my-chatbots/${chatbotId}/database-connections/${connectionId}/sync`).then(r => r.data);
+
+export const deleteDatabaseConnection = (chatbotId, connectionId) =>
+    api.delete(`/my-chatbots/${chatbotId}/database-connections/${connectionId}`).then(r => r.data);

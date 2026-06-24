@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getChatbotDocuments, uploadChatbotDocument, deleteChatbotDocument, addChatbotUrl, updateMyChatbot } from '../../api';
+import DatabaseConnect from './DatabaseConnect';
 
 export default function KnowledgeBase({ chatbot, onUpdate }) {
     const [documents, setDocuments] = useState([]);
@@ -21,6 +22,10 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
         }
         getChatbotDocuments(chatbot.id).then(setDocuments).finally(() => setLoading(false));
     }, [chatbot?.id]);
+
+    const refreshDocuments = () => {
+        if (chatbot?.id) getChatbotDocuments(chatbot.id).then(setDocuments);
+    };
 
     const handleFile = async (file) => {
         if (!file || !chatbot?.id) return;
@@ -92,7 +97,7 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
     };
 
     return (
-        <div className="h-full flex flex-col max-w-2xl">
+        <div className="h-full flex flex-col max-w-2xl overflow-y-auto pr-4">
             <p className="text-navy-300 text-sm mb-5">
                 Upload documents, add a website URL, or both — your chatbot answers questions grounded in this content.
             </p>
@@ -146,7 +151,7 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
             )}
 
             {/* Documents list */}
-            <div className="flex-1 overflow-y-auto space-y-2">
+            <div className="space-y-2">
                 {loading ? (
                     <p className="text-sm text-navy-300 text-center py-8">Loading…</p>
                 ) : documents.length === 0 ? (
@@ -181,6 +186,8 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
                 )}
             </div>
 
+            <DatabaseConnect chatbot={chatbot} onUpdate={refreshDocuments} />
+
             {/* Answer scope toggle */}
             <div className="border-t border-white/10 pt-5 mt-5 flex-shrink-0">
                 <button
@@ -204,10 +211,10 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
                         <p className="text-sm font-medium text-white">
                             {allowGeneralKnowledge ? 'Use outside knowledge when needed' : 'Knowledge base only'}
                         </p>
-                        <p className="text-xs text-navy-300">
+                        <p className="text-xs text-navy-300 mt-1 italic">
                             {allowGeneralKnowledge
-                                ? 'Falls back to general AI knowledge for questions your documents don\'t cover.'
-                                : 'Only answers from your uploaded documents — says "I don\'t know" otherwise.'}
+                                ? '"Prefer the documents above when they cover the question. If a question goes beyond what the documents cover, answer it using your own general knowledge instead of refusing — just don\'t contradict the documents."'
+                                : '"Only answer using the documents above. If the answer isn\'t in the documents, say you don\'t have that information — do not use outside knowledge or make anything up."'}
                         </p>
                     </div>
                 </button>
@@ -217,6 +224,6 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
 }
 
 function FileIcon({ type }) {
-    const icons = { pdf: '📄', txt: '📝', md: '📝', docx: '📃', xlsx: '📊', xls: '📊', url: '🔗' };
+    const icons = { pdf: '📄', txt: '📝', md: '📝', docx: '📃', xlsx: '📊', xls: '📊', url: '🔗', database: '🗄️' };
     return <span className="text-xl flex-shrink-0">{icons[type] ?? '📎'}</span>;
 }

@@ -54,7 +54,7 @@ export default function ClientDashboard() {
                     <span className="text-xs font-medium text-navy-300 uppercase tracking-wide">My Chatbots</span>
                     <button
                         onClick={() => { setShowCreateForm(true); setActiveId(null); }}
-                        className="text-xs px-2 py-1 bg-gold-600 hover:bg-gold-500 rounded-lg transition font-medium"
+                        className="text-sm px-4 py-2.5 bg-gold-600 hover:bg-gold-500 rounded-xl transition font-medium"
                     >
                         + New
                     </button>

@@ -1,0 +1,223 @@
+import React, { useState, useEffect } from 'react';
+import {
+    getDatabaseConnections, testDatabaseConnection, createDatabaseConnection,
+    syncDatabaseConnection, deleteDatabaseConnection,
+} from '../../api';
+
+const EMPTY_FORM = { driver: 'mysql', host: '', port: '3306', database: '', username: '', password: '' };
+
+const STATUS_STYLES = {
+    connected: 'text-emerald-400',
+    pending:   'text-yellow-400',
+    failed:    'text-red-400',
+};
+
+export default function DatabaseConnect({ chatbot, onUpdate }) {
+    const [connections, setConnections] = useState([]);
+    const [loading, setLoading]         = useState(true);
+    const [form, setForm]               = useState(EMPTY_FORM);
+    const [tables, setTables]           = useState(null);
+    const [selectedTables, setSelected] = useState([]);
+    const [testing, setTesting]         = useState(false);
+    const [saving, setSaving]           = useState(false);
+    const [error, setError]             = useState(null);
+    const [syncingId, setSyncingId]     = useState(null);
+
+    useEffect(() => {
+        if (!chatbot?.id) return;
+        getDatabaseConnections(chatbot.id).then(setConnections).finally(() => setLoading(false));
+    }, [chatbot?.id]);
+
+    const handleDriverChange = (driver) => {
+        setForm(f => ({ ...f, driver, port: driver === 'mysql' ? '3306' : '5432' }));
+    };
+
+    const handleTest = async (e) => {
+        e.preventDefault();
+        setTesting(true);
+        setError(null);
+        setTables(null);
+        setSelected([]);
+        try {
+            const { tables } = await testDatabaseConnection(chatbot.id, { ...form, port: Number(form.port) });
+            setTables(tables);
+            setSelected(tables);
+        } catch (err) {
+            setError(err.response?.data?.message ?? err.message);
+        } finally {
+            setTesting(false);
+        }
+    };
+
+    const handleConnect = async () => {
+        if (selectedTables.length === 0) return;
+        setSaving(true);
+        setError(null);
+        try {
+            const connection = await createDatabaseConnection(chatbot.id, {
+                ...form, port: Number(form.port), tables: selectedTables,
+            });
+            setConnections(prev => [connection, ...prev]);
+            setForm(EMPTY_FORM);
+            setTables(null);
+            setSelected([]);
+            onUpdate?.();
+        } catch (err) {
+            setError(err.response?.data?.message ?? err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleResync = async (connection) => {
+        setSyncingId(connection.id);
+        try {
+            const updated = await syncDatabaseConnection(chatbot.id, connection.id);
+            setConnections(prev => prev.map(c => c.id === updated.id ? updated : c));
+            onUpdate?.();
+        } finally {
+            setSyncingId(null);
+        }
+    };
+
+    const handleDisconnect = async (connection) => {
+        if (!confirm(`Disconnect "${connection.database}"? Its synced tables will be removed from the knowledge base.`)) return;
+        await deleteDatabaseConnection(chatbot.id, connection.id);
+        setConnections(prev => prev.filter(c => c.id !== connection.id));
+        onUpdate?.();
+    };
+
+    const toggleTable = (table) => {
+        setSelected(prev => prev.includes(table) ? prev.filter(t => t !== table) : [...prev, table]);
+    };
+
+    return (
+        <div className="border-t border-white/10 pt-5 mt-5 flex-shrink-0">
+            <h3 className="text-sm font-semibold text-white mb-1">Connect a Database</h3>
+            <p className="text-xs text-navy-300 mb-4">
+                Pull data straight from your MySQL or PostgreSQL database into the knowledge base.
+                Select the tables you want — they'll sync as searchable content for your chatbot.
+            </p>
+
+            {!loading && connections.length > 0 && (
+                <div className="space-y-2 mb-4">
+                    {connections.map(conn => (
+                        <div key={conn.id} className="flex items-center gap-3 bg-navy-900/60 border border-white/10 rounded-lg px-4 py-3">
+                            <span className="text-xl flex-shrink-0">🗄️</span>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm text-white truncate">{conn.database} <span className="text-navy-400">({conn.driver})</span></p>
+                                <p className="text-xs text-navy-300">
+                                    {conn.tables.length} table{conn.tables.length !== 1 ? 's' : ''} ·{' '}
+                                    <span className={STATUS_STYLES[conn.status] ?? 'text-navy-300'}>{conn.status}</span>
+                                    {conn.last_synced_at && <> · synced {new Date(conn.last_synced_at).toLocaleString()}</>}
+                                </p>
+                                {conn.status === 'failed' && conn.error_message && (
+                                    <p className="text-xs text-red-400 truncate" title={conn.error_message}>{conn.error_message}</p>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => handleResync(conn)}
+                                disabled={syncingId === conn.id}
+                                className="text-xs px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-navy-200 transition flex-shrink-0 disabled:opacity-50"
+                            >
+                                {syncingId === conn.id ? 'Syncing…' : 'Re-sync'}
+                            </button>
+                            <button onClick={() => handleDisconnect(conn)}
+                                className="p-1.5 rounded hover:bg-white/10 text-navy-300 hover:text-red-400 transition flex-shrink-0">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <form onSubmit={handleTest} className="bg-navy-900 border border-white/10 rounded-xl p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                    <select
+                        value={form.driver}
+                        onChange={e => handleDriverChange(e.target.value)}
+                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-gold-500"
+                    >
+                        <option value="mysql">MySQL</option>
+                        <option value="pgsql">PostgreSQL</option>
+                    </select>
+                    <input
+                        type="text" placeholder="Database name" value={form.database} required
+                        onChange={e => setForm(f => ({ ...f, database: e.target.value }))}
+                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                    />
+                    <input
+                        type="text" placeholder="Host (e.g. localhost)" value={form.host} required
+                        onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
+                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                    />
+                    <input
+                        type="number" placeholder="Port" value={form.port} required
+                        onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
+                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                    />
+                    <input
+                        type="text" placeholder="Username" value={form.username} required
+                        onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                    />
+                    <input
+                        type="password" placeholder="Password" value={form.password}
+                        onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                    />
+                </div>
+
+                {error && (
+                    <div className="px-3 py-2 bg-red-900/40 border border-red-700 rounded-lg text-red-300 text-sm">
+                        {error}
+                    </div>
+                )}
+
+                <button
+                    type="submit"
+                    disabled={testing}
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-50 rounded-lg text-sm font-medium text-navy-200 transition"
+                >
+                    {testing ? 'Testing connection…' : 'Test Connection'}
+                </button>
+
+                {tables && (
+                    <div className="border-t border-white/10 pt-3 mt-3">
+                        {tables.length === 0 ? (
+                            <p className="text-sm text-navy-300">Connected, but no tables were found.</p>
+                        ) : (
+                            <>
+                                <p className="text-xs text-navy-300 mb-2">Select the tables to sync ({selectedTables.length} selected):</p>
+                                <div className="max-h-40 overflow-y-auto space-y-1 mb-3">
+                                    {tables.map(table => (
+                                        <label key={table} className="flex items-center gap-2 text-sm text-navy-200 px-2 py-1 rounded hover:bg-white/5 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedTables.includes(table)}
+                                                onChange={() => toggleTable(table)}
+                                                className="rounded border-white/20 bg-navy-800 text-gold-600 focus:ring-gold-500"
+                                            />
+                                            {table}
+                                        </label>
+                                    ))}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleConnect}
+                                    disabled={saving || selectedTables.length === 0}
+                                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 rounded-lg text-sm font-medium transition"
+                                >
+                                    {saving ? 'Connecting…' : `Connect & Sync ${selectedTables.length} Table${selectedTables.length !== 1 ? 's' : ''}`}
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+            </form>
+        </div>
+    );
+}

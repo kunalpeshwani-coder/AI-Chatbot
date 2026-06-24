@@ -1,4 +1,7 @@
 <x-guest-layout>
+    <x-slot name="heading">{{ __('Create your account') }}</x-slot>
+    <x-slot name="subheading">{{ __('Set up your AI chatbot in minutes') }}</x-slot>
+
     <form method="POST" action="{{ route('register') }}">
         @csrf
 

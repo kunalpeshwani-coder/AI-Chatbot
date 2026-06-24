@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="no-scrollbar">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,10 +7,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-gradient-to-br from-navy-900 via-navy-800 to-navy-900 text-white flex flex-col">
+<body class="no-scrollbar min-h-screen bg-gradient-to-br from-navy-900 via-navy-800 to-navy-900 text-white flex flex-col">
 
     {{-- Nav --}}
-    <nav class="flex items-center justify-end px-8 py-5">
+    <nav class="flex items-center justify-between px-8 py-5">
+        <a href="https://journai.us" target="_blank" rel="noopener noreferrer">
+            <img src="/journai-logo.svg" alt="JournAI" class="h-7 w-auto">
+        </a>
+
         <div class="flex items-center gap-3">
             @auth
                 <a href="{{ route('chat') }}"
@@ -74,11 +78,6 @@
             <p class="text-navy-300 text-sm">Built with Laravel and React for a clean, responsive experience.</p>
         </div>
     </section>
-
-    {{-- Footer --}}
-    <footer class="text-center text-navy-300 text-xs pb-6">
-        AI Chatbot &mdash; Learning Project
-    </footer>
 
 </body>
 </html>

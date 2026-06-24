@@ -44,7 +44,7 @@ export default function TestChat({ chatbot }) {
             </p>
 
             <div className="flex-1 flex flex-col bg-navy-900/60 border border-white/10 rounded-2xl overflow-hidden min-h-0">
-                <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+                <div className="flex-1 overflow-y-auto px-5 py-5 pr-7 space-y-4">
                     {messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center">
                             <p className="text-navy-300 text-sm">Send a message to test your chatbot.</p>

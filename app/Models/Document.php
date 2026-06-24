@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Document extends Model
 {
     protected $fillable = [
-        'domain_id', 'chatbot_id', 'original_name', 'source_url', 'file_path',
+        'domain_id', 'chatbot_id', 'database_connection_id', 'original_name', 'source_url', 'file_path',
         'file_type', 'extracted_text', 'status', 'size_bytes',
     ];
 
@@ -22,5 +22,10 @@ class Document extends Model
     public function chatbot(): BelongsTo
     {
         return $this->belongsTo(Chatbot::class);
+    }
+
+    public function databaseConnection(): BelongsTo
+    {
+        return $this->belongsTo(DatabaseConnection::class);
     }
 }

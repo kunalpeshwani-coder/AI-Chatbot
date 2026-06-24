@@ -1,4 +1,7 @@
 <x-guest-layout>
+    <x-slot name="heading">{{ __('Welcome back') }}</x-slot>
+    <x-slot name="subheading">{{ __('Log in to manage your chatbots') }}</x-slot>
+
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 

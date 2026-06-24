@@ -10,28 +10,34 @@
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-white antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gradient-to-br from-navy-900 via-navy-800 to-navy-900">
-            <div class="flex items-center gap-2">
-                <a href="/" class="flex items-center gap-2">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gold-400 to-gold-700 flex items-center justify-center shadow-md shadow-black/40 ring-1 ring-white/10">
-                        <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3-3-3z"/>
-                        </svg>
-                    </div>
-                    <span class="text-xl font-semibold tracking-tight">AI Chatbot</span>
-                </a>
-            </div>
+    <body class="no-scrollbar font-sans text-white antialiased">
+        <div class="min-h-screen flex flex-col items-center justify-center px-4 py-10 bg-gradient-to-br from-navy-900 via-navy-800 to-navy-900">
+            <a href="/" class="flex flex-col items-center gap-3 mb-8">
+                <img src="/journai-logo.svg" alt="JournAI" class="h-9 w-auto">
+                <span class="text-xs uppercase tracking-widest text-navy-300">AI Chatbot Platform</span>
+            </a>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-navy-900/60 border border-white/10 shadow-md overflow-hidden sm:rounded-xl">
+            <div class="w-full sm:max-w-md px-8 py-8 bg-navy-900/60 border border-white/10 shadow-xl shadow-black/30 rounded-2xl backdrop-blur-sm">
+                @isset($heading)
+                    <div class="mb-6 text-center">
+                        <h1 class="text-xl font-semibold text-white">{{ $heading }}</h1>
+                        @isset($subheading)
+                            <p class="text-sm text-navy-300 mt-1">{{ $subheading }}</p>
+                        @endisset
+                    </div>
+                @endisset
+
                 {{ $slot }}
             </div>
+
+            <p class="text-xs text-navy-400 mt-8">
+                &copy; {{ date('Y') }} JournAI &mdash; All rights reserved.
+            </p>
         </div>
     </body>
 </html>

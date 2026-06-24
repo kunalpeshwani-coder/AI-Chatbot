@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import KnowledgeBase from './KnowledgeBase';
+import ChatbotSettings from './ChatbotSettings';
 import TestChat from './TestChat';
 import EmbedCode from './EmbedCode';
 
 const TABS = [
     { key: 'knowledge', label: 'Knowledge Base' },
+    { key: 'settings',  label: 'Custom Instructions' },
     { key: 'test',      label: 'Test It' },
     { key: 'embed',     label: 'Embed Code' },
 ];
@@ -49,6 +51,7 @@ export default function ChatbotOverview({ chatbot, onUpdate }) {
 
             <div className="flex-1 overflow-hidden min-h-0">
                 {tab === 'knowledge' && <KnowledgeBase chatbot={chatbot} onUpdate={onUpdate} />}
+                {tab === 'settings' && <ChatbotSettings chatbot={chatbot} onUpdate={onUpdate} />}
                 {tab === 'test' && <TestChat chatbot={chatbot} />}
                 {tab === 'embed' && <EmbedCode chatbot={chatbot} onUpdate={onUpdate} />}
             </div>

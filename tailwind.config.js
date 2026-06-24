@@ -13,11 +13,11 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Manrope', 'Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', ...defaultTheme.fontFamily.sans],
             },
             colors: {
                 navy: {
-                    950: '#011226',
+                    950: '#022647',
                     900: '#022647',
                     800: '#072b4c',
                     700: '#0a2e4f',

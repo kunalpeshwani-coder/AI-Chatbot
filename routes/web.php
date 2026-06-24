@@ -2,9 +2,9 @@
 
 use App\Http\Controllers\Admin\ClientController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\ChatbotDatabaseController;
 use App\Http\Controllers\ChatbotDocumentController;
 use App\Http\Controllers\ConversationController;
-use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
@@ -64,18 +64,17 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('/my-chatbots/{chatbot}/documents/url', [ChatbotDocumentController::class, 'storeUrl']);
     Route::delete('/my-chatbots/{chatbot}/documents/{document}', [ChatbotDocumentController::class, 'destroy']);
 
+    // Client's chatbots — connect a database as a knowledge source
+    Route::get('/my-chatbots/{chatbot}/database-connections', [ChatbotDatabaseController::class, 'index']);
+    Route::post('/my-chatbots/{chatbot}/database-connections/test', [ChatbotDatabaseController::class, 'testConnection']);
+    Route::post('/my-chatbots/{chatbot}/database-connections', [ChatbotDatabaseController::class, 'store']);
+    Route::post('/my-chatbots/{chatbot}/database-connections/{connection}/sync', [ChatbotDatabaseController::class, 'resync']);
+    Route::delete('/my-chatbots/{chatbot}/database-connections/{connection}', [ChatbotDatabaseController::class, 'destroy']);
+
     // Admin-only routes
     Route::middleware('admin')->prefix('admin')->group(function () {
-        Route::get('/domains', [DomainController::class, 'adminIndex']);
-        Route::post('/domains', [DomainController::class, 'store']);
-        Route::put('/domains/{domain}', [DomainController::class, 'update']);
-        Route::delete('/domains/{domain}', [DomainController::class, 'destroy']);
-
-        Route::get('/domains/{domain}/documents', [DocumentController::class, 'index']);
-        Route::post('/domains/{domain}/documents', [DocumentController::class, 'store']);
-        Route::delete('/domains/{domain}/documents/{document}', [DocumentController::class, 'destroy']);
-
         Route::get('/clients', [ClientController::class, 'index']);
+        Route::get('/clients/{client}', [ClientController::class, 'show']);
         Route::put('/clients/{client}/package', [ClientController::class, 'updatePackage']);
     });
 });

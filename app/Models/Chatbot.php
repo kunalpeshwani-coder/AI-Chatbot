@@ -34,6 +34,11 @@ class Chatbot extends Model
         return $this->hasMany(Document::class);
     }
 
+    public function databaseConnections(): HasMany
+    {
+        return $this->hasMany(DatabaseConnection::class);
+    }
+
     public function conversations(): HasMany
     {
         return $this->hasMany(Conversation::class);
@@ -64,12 +69,14 @@ class Chatbot extends Model
                 $parts[] = "\n--- Document: {$doc->original_name} ---\n{$text}";
             }
 
-            $parts[] = $this->allow_general_knowledge
-                ? "\nPrefer the documents above when they cover the question. If a question goes beyond "
-                    . "what the documents cover, answer it using your own general knowledge instead of refusing — "
-                    . "just don't contradict the documents."
-                : "\nOnly answer using the documents above. If the answer isn't in the documents, say you don't "
-                    . "have that information — do not use outside knowledge or make anything up.";
+            if (!$this->instructions) {
+                $parts[] = $this->allow_general_knowledge
+                    ? "\nPrefer the documents above when they cover the question. If a question goes beyond "
+                        . "what the documents cover, answer it using your own general knowledge instead of refusing — "
+                        . "just don't contradict the documents."
+                    : "\nOnly answer using the documents above. If the answer isn't in the documents, say you don't "
+                        . "have that information — do not use outside knowledge or make anything up.";
+            }
         }
 
         return implode("\n", $parts);
