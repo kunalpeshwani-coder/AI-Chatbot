@@ -18,7 +18,9 @@ class DocumentService
         };
     }
 
-    // Fetches a web page and strips it down to its visible text content
+    // Fetches a web page and strips it down to its main visible text content — deliberately
+    // excludes nav/header/footer/sidebar boilerplate so the knowledge base reflects the actual
+    // article/page content rather than menu links, which used to crowd out the real text.
     public function extractFromUrl(string $url): string
     {
         try {
@@ -32,19 +34,133 @@ class DocumentService
                 return '';
             }
 
-            $html = $response->body();
-
-            // Drop script/style blocks entirely, then strip remaining tags
-            $html = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1>/is', ' ', $html);
-            $text = strip_tags($html ?? '');
-            $text = html_entity_decode($text, ENT_QUOTES);
-            $text = preg_replace('/[ \t]+/', ' ', $text ?? '');
-            $text = preg_replace('/\n{3,}/', "\n\n", $text ?? '');
-
-            return trim($text ?? '');
+            return $this->extractMainContent($response->body() ?? '');
         } catch (\Throwable) {
             return '';
         }
+    }
+
+    private function extractMainContent(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_clear_errors();
+
+        $xpath = new \DOMXPath($dom);
+
+        // Strip elements that are never the actual content, regardless of where they sit.
+        foreach ($xpath->query('//script|//style|//nav|//header|//footer|//aside|//noscript|//form|//iframe') as $node) {
+            $node->parentNode?->removeChild($node);
+        }
+
+        // Prefer a dedicated content container if the page has one — far less noisy than the
+        // whole body, which still includes sidebars/related-content widgets on most sites.
+        $content = $xpath->query('//article')->item(0)
+            ?? $xpath->query('//main')->item(0)
+            ?? $xpath->query('//*[@role="main"]')->item(0)
+            ?? $this->largestContentCandidate($xpath)
+            ?? $dom->getElementsByTagName('body')->item(0);
+
+        if (!$content) {
+            return '';
+        }
+
+        $text = $content->textContent;
+        $text = html_entity_decode($text, ENT_QUOTES);
+        $text = preg_replace('/[ \t]+/', ' ', $text) ?? '';
+        $text = preg_replace('/\n\s*\n\s*/', "\n\n", $text) ?? '';
+
+        return trim($text);
+    }
+
+    // Many modern sites (Next.js/React builds especially) don't use <article>/<main> at all —
+    // their content container is a <div> with a hashed CSS-module class name that still contains
+    // a recognizable word like "article" or "content". Among all such candidates, the real
+    // content block is reliably the one with the most text (sidebars/widgets are comparatively
+    // short), which also happens to sidestep nav menus that don't match these keywords at all.
+    private function largestContentCandidate(\DOMXPath $xpath): ?\DOMNode
+    {
+        $candidates = $xpath->query(
+            "//*[contains(translate(@class, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'article') "
+            . "or contains(translate(@class, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'post-content') "
+            . "or contains(translate(@class, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'entry-content') "
+            . "or contains(translate(@class, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'post-body') "
+            . "or contains(translate(@class, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'maincontent')]",
+        );
+
+        if (!$candidates || $candidates->length === 0) {
+            return null;
+        }
+
+        $nodes = iterator_to_array($candidates);
+
+        // Layout wrappers tend to also match these keywords (e.g. "ArticlePageLayout") and
+        // contain the *real* content node plus sidebar/related-content widgets — so prefer the
+        // most specific (deepest) match: drop any candidate that is an ancestor of another one.
+        $leafNodes = array_filter($nodes, function ($node) use ($nodes) {
+            foreach ($nodes as $other) {
+                if ($other !== $node && $this->isAncestorOf($node, $other)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        $best       = null;
+        $bestLength = 0;
+
+        foreach ($leafNodes as $node) {
+            $length = strlen(trim($node->textContent));
+
+            if ($length <= 200 || $length <= $bestLength) {
+                continue;
+            }
+
+            // Nav menus are almost entirely link text; real article prose isn't.
+            if ($this->linkDensity($node) > 0.3) {
+                continue;
+            }
+
+            $best       = $node;
+            $bestLength = $length;
+        }
+
+        return $best;
+    }
+
+    private function isAncestorOf(\DOMNode $ancestor, \DOMNode $node): bool
+    {
+        for ($parent = $node->parentNode; $parent !== null; $parent = $parent->parentNode) {
+            if ($parent === $ancestor) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function linkDensity(\DOMNode $node): float
+    {
+        $totalLength = strlen(trim($node->textContent));
+
+        if ($totalLength === 0) {
+            return 1.0;
+        }
+
+        $linkLength = 0;
+        $links      = $node instanceof \DOMElement
+            ? $node->getElementsByTagName('a')
+            : [];
+
+        foreach ($links as $a) {
+            $linkLength += strlen(trim($a->textContent));
+        }
+
+        return $linkLength / $totalLength;
     }
 
     private function extractFromText(string $path): string
