@@ -35,6 +35,11 @@ export default function ChatbotSettings({ chatbot, onUpdate }) {
                     Tell your chatbot how to behave — tone, rules, things to always mention or avoid.
                     These instructions are added to every conversation alongside your knowledge base.
                 </p>
+                <p className="text-xs text-amber-300/90 mb-4 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                    This is visible behavior for anyone who chats with your public widget — not a private
+                    note. A built-in safety rule (never request payment details, passwords, or IDs) always
+                    applies and can't be turned off here.
+                </p>
 
                 <textarea
                     value={instructions}
