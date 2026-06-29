@@ -91,5 +91,7 @@ export const deleteDatabaseConnection = (chatbotId, connectionId) =>
 export const getAvailableTables = (chatbotId, connectionId) =>
     api.get(`/my-chatbots/${chatbotId}/database-connections/${connectionId}/tables`).then(r => r.data);
 
-export const addDatabaseTables = (chatbotId, connectionId, tables) =>
-    api.post(`/my-chatbots/${chatbotId}/database-connections/${connectionId}/tables`, { tables }).then(r => r.data);
+export const addDatabaseTables = (chatbotId, connectionId, tables, excludedColumns = {}) =>
+    api.post(`/my-chatbots/${chatbotId}/database-connections/${connectionId}/tables`, {
+        tables, excluded_columns: excludedColumns,
+    }).then(r => r.data);

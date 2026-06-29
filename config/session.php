@@ -169,7 +169,11 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // Defaults to true in production so the session/CSRF cookies are never sent over plain HTTP,
+    // even if SESSION_SECURE_COOKIE is left unset in .env. Override explicitly if needed.
+    // (Reads APP_ENV directly, not app()->environment() — config files load before the
+    // container is ready, so app() isn't safely callable here, e.g. during config:cache.)
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------

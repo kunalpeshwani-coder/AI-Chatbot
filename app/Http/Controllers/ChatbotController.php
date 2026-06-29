@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Chatbot;
 use App\Services\AIService;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +29,8 @@ class ChatbotController extends Controller
 
         $chatbot = $request->user()->chatbots()->create($data);
 
+        AuditLog::record('chatbot.created', $chatbot);
+
         return response()->json($chatbot->loadCount('documents'), 201);
     }
 
@@ -50,6 +53,8 @@ class ChatbotController extends Controller
     public function destroy(Request $request, Chatbot $chatbot): JsonResponse
     {
         abort_if($chatbot->user_id !== $request->user()->id, 403);
+
+        AuditLog::record('chatbot.deleted', $chatbot, ['name' => $chatbot->name]);
 
         $chatbot->delete();
 

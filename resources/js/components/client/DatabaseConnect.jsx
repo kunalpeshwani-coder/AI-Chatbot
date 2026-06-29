@@ -34,6 +34,8 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
     const [pendingCredentials, setPendingCredentials] = useState(null);
     const [tables, setTables]           = useState(null);
     const [selectedTables, setSelected] = useState([]);
+    const [excludedColumns, setExcludedColumns] = useState({});
+    const [expandedTable, setExpandedTable] = useState(null);
     const [testing, setTesting]         = useState(false);
     const [saving, setSaving]           = useState(false);
     const [error, setError]             = useState(null);
@@ -41,6 +43,8 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
     const [addingTablesFor, setAddingTablesFor] = useState(null);
     const [moreTables, setMoreTables]   = useState(null);
     const [moreSelected, setMoreSelected] = useState([]);
+    const [moreExcludedColumns, setMoreExcludedColumns] = useState({});
+    const [moreExpandedTable, setMoreExpandedTable] = useState(null);
     const [loadingMore, setLoadingMore] = useState(false);
     const [savingMore, setSavingMore]   = useState(false);
     const [moreError, setMoreError]     = useState(null);
@@ -62,11 +66,12 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
         setError(null);
         setTables(null);
         setSelected([]);
+        setExcludedColumns({});
         const credentials = { ...form, port: Number(form.port) };
         try {
             const { tables } = await testDatabaseConnection(chatbot.id, credentials);
             setTables(tables);
-            setSelected(tables);
+            setSelected(tables.map(t => t.name));
             setPendingCredentials(credentials);
         } catch (err) {
             setError(err.response?.data?.message ?? err.message);
@@ -83,13 +88,14 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
         setError(null);
         try {
             const connection = await createDatabaseConnection(chatbot.id, {
-                ...pendingCredentials, tables: selectedTables,
+                ...pendingCredentials, tables: selectedTables, excluded_columns: excludedColumns,
             });
             setConnections(prev => [connection, ...prev]);
             setForm(EMPTY_FORM);
             setPendingCredentials(null);
             setTables(null);
             setSelected([]);
+            setExcludedColumns({});
             onUpdate?.();
         } catch (err) {
             setError(err.response?.data?.message ?? err.message);
@@ -122,6 +128,22 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
         setSelected(prev => prev.includes(table) ? prev.filter(t => t !== table) : [...prev, table]);
     };
 
+    const toggleColumn = (table, column) => {
+        setExcludedColumns(prev => {
+            const current = prev[table] ?? [];
+            const next = current.includes(column) ? current.filter(c => c !== column) : [...current, column];
+            return { ...prev, [table]: next };
+        });
+    };
+
+    const toggleMoreColumn = (table, column) => {
+        setMoreExcludedColumns(prev => {
+            const current = prev[table] ?? [];
+            const next = current.includes(column) ? current.filter(c => c !== column) : [...current, column];
+            return { ...prev, [table]: next };
+        });
+    };
+
     const handleOpenAddTables = async (connection) => {
         if (addingTablesFor === connection.id) {
             setAddingTablesFor(null);
@@ -131,11 +153,12 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
         setAddingTablesFor(connection.id);
         setMoreTables(null);
         setMoreSelected([]);
+        setMoreExcludedColumns({});
         setMoreError(null);
         setLoadingMore(true);
         try {
             const { tables } = await getAvailableTables(chatbot.id, connection.id);
-            setMoreTables(tables.filter(t => !connection.tables.includes(t)));
+            setMoreTables(tables.filter(t => !connection.tables.includes(t.name)));
         } catch (err) {
             setMoreError(err.response?.data?.message ?? err.message);
         } finally {
@@ -152,11 +175,12 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
         setSavingMore(true);
         setMoreError(null);
         try {
-            const updated = await addDatabaseTables(chatbot.id, connection.id, moreSelected);
+            const updated = await addDatabaseTables(chatbot.id, connection.id, moreSelected, moreExcludedColumns);
             setConnections(prev => prev.map(c => c.id === updated.id ? updated : c));
             setAddingTablesFor(null);
             setMoreTables(null);
             setMoreSelected([]);
+            setMoreExcludedColumns({});
             onUpdate?.();
         } catch (err) {
             setMoreError(err.response?.data?.message ?? err.message);
@@ -225,19 +249,53 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
                                     ) : moreTables ? (
                                         <>
                                             <p className="text-xs text-navy-300 mb-2">Select more tables to add ({moreSelected.length} selected):</p>
-                                            <div className="max-h-40 overflow-y-auto space-y-1 mb-3">
+                                            <div className="max-h-56 overflow-y-auto space-y-1 mb-3">
                                                 {moreTables.map(table => (
-                                                    <label key={table} className="flex items-center gap-2 text-sm text-navy-200 px-2 py-1 rounded hover:bg-white/5 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={moreSelected.includes(table)}
-                                                            onChange={() => toggleMoreTable(table)}
-                                                            className="rounded border-white/20 bg-navy-800 text-gold-600 focus:ring-gold-500"
-                                                        />
-                                                        {table}
-                                                    </label>
+                                                    <div key={table.name} className="rounded hover:bg-white/5">
+                                                        <div className="flex items-center gap-2 px-2 py-1">
+                                                            <label className="flex items-center gap-2 text-sm text-navy-200 cursor-pointer flex-1">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={moreSelected.includes(table.name)}
+                                                                    onChange={() => toggleMoreTable(table.name)}
+                                                                    className="rounded border-white/20 bg-navy-800 text-gold-600 focus:ring-gold-500"
+                                                                />
+                                                                {table.name}
+                                                            </label>
+                                                            {table.columns?.length > 0 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setMoreExpandedTable(t => t === table.name ? null : table.name)}
+                                                                    className="text-xs text-navy-400 hover:text-gold-400"
+                                                                >
+                                                                    {(moreExcludedColumns[table.name]?.length ?? 0) > 0
+                                                                        ? `${moreExcludedColumns[table.name].length} excluded`
+                                                                        : 'Columns'}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        {moreExpandedTable === table.name && (
+                                                            <div className="ml-7 mb-2 grid grid-cols-2 gap-0.5">
+                                                                {table.columns.map(col => (
+                                                                    <label key={col} className="flex items-center gap-1.5 text-xs text-navy-300 px-1 cursor-pointer">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={!(moreExcludedColumns[table.name] ?? []).includes(col)}
+                                                                            onChange={() => toggleMoreColumn(table.name, col)}
+                                                                            className="rounded border-white/20 bg-navy-800 text-gold-600 focus:ring-gold-500"
+                                                                        />
+                                                                        {col}
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 ))}
                                             </div>
+                                            <p className="text-xs text-navy-400 mb-2">
+                                                Uncheck a column to exclude it from the knowledge base — useful for sensitive fields
+                                                like emails, SSNs, or passwords that public chatbot visitors shouldn't be able to ask about.
+                                            </p>
                                             <button
                                                 type="button"
                                                 onClick={() => handleAddTables(conn)}
@@ -340,19 +398,53 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
                         ) : (
                             <>
                                 <p className="text-xs text-navy-300 mb-2">Select the tables to sync ({selectedTables.length} selected):</p>
-                                <div className="max-h-40 overflow-y-auto space-y-1 mb-3">
+                                <div className="max-h-56 overflow-y-auto space-y-1 mb-3">
                                     {tables.map(table => (
-                                        <label key={table} className="flex items-center gap-2 text-sm text-navy-200 px-2 py-1 rounded hover:bg-white/5 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedTables.includes(table)}
-                                                onChange={() => toggleTable(table)}
-                                                className="rounded border-white/20 bg-navy-800 text-gold-600 focus:ring-gold-500"
-                                            />
-                                            {table}
-                                        </label>
+                                        <div key={table.name} className="rounded hover:bg-white/5">
+                                            <div className="flex items-center gap-2 px-2 py-1">
+                                                <label className="flex items-center gap-2 text-sm text-navy-200 cursor-pointer flex-1">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedTables.includes(table.name)}
+                                                        onChange={() => toggleTable(table.name)}
+                                                        className="rounded border-white/20 bg-navy-800 text-gold-600 focus:ring-gold-500"
+                                                    />
+                                                    {table.name}
+                                                </label>
+                                                {table.columns?.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setExpandedTable(t => t === table.name ? null : table.name)}
+                                                        className="text-xs text-navy-400 hover:text-gold-400"
+                                                    >
+                                                        {(excludedColumns[table.name]?.length ?? 0) > 0
+                                                            ? `${excludedColumns[table.name].length} excluded`
+                                                            : 'Columns'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {expandedTable === table.name && (
+                                                <div className="ml-7 mb-2 grid grid-cols-2 gap-0.5">
+                                                    {table.columns.map(col => (
+                                                        <label key={col} className="flex items-center gap-1.5 text-xs text-navy-300 px-1 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={!(excludedColumns[table.name] ?? []).includes(col)}
+                                                                onChange={() => toggleColumn(table.name, col)}
+                                                                className="rounded border-white/20 bg-navy-800 text-gold-600 focus:ring-gold-500"
+                                                            />
+                                                            {col}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
+                                <p className="text-xs text-navy-400 mb-2">
+                                    Uncheck a column to exclude it from the knowledge base — useful for sensitive fields
+                                    like emails, SSNs, or passwords that public chatbot visitors shouldn't be able to ask about.
+                                </p>
                                 <button
                                     type="button"
                                     onClick={handleConnect}

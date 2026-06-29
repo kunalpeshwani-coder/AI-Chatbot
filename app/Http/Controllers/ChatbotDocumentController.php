@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Chatbot;
 use App\Models\Document;
 use App\Services\DocumentService;
+use App\Services\FileSignatureGuard;
 use App\Services\RagService;
 use App\Services\SsrfGuard;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +34,14 @@ class ChatbotDocumentController extends Controller
 
         $file     = $request->file('file');
         $fileType = strtolower($file->getClientOriginalExtension());
-        $stored   = $file->store("documents/chatbot_{$chatbot->id}", 'local');
+
+        try {
+            FileSignatureGuard::assertValid($file->getRealPath(), $fileType);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        $stored = $file->store("documents/chatbot_{$chatbot->id}", 'local');
 
         $document = $chatbot->documents()->create([
             'original_name' => $file->getClientOriginalName(),
@@ -41,6 +50,8 @@ class ChatbotDocumentController extends Controller
             'size_bytes'    => $file->getSize(),
             'status'        => 'pending',
         ]);
+
+        AuditLog::record('document.uploaded', $document, ['chatbot_id' => $chatbot->id, 'file_type' => $fileType]);
 
         try {
             $absolutePath = Storage::disk('local')->path($stored);
@@ -84,6 +95,8 @@ class ChatbotDocumentController extends Controller
             'status'         => 'pending',
         ]);
 
+        AuditLog::record('document.url_added', $document, ['chatbot_id' => $chatbot->id, 'url' => $data['url']]);
+
         try {
             $text = $this->extractor->extractFromUrl($data['url']);
 
@@ -106,6 +119,8 @@ class ChatbotDocumentController extends Controller
     {
         abort_if($chatbot->user_id !== $request->user()->id, 403);
         abort_if($document->chatbot_id !== $chatbot->id, 404);
+
+        AuditLog::record('document.deleted', $document, ['chatbot_id' => $chatbot->id, 'original_name' => $document->original_name]);
 
         if ($document->file_path) {
             Storage::disk('local')->delete($document->file_path);

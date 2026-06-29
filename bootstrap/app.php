@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectUsersTo(fn (Request $request) => $request->user()?->is_admin ? '/admin' : '/dashboard');
         $middleware->alias(['admin' => \App\Http\Middleware\AdminMiddleware::class]);
+        $middleware->web(append: [\App\Http\Middleware\SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

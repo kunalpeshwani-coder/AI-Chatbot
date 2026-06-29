@@ -15,7 +15,10 @@ class Chatbot extends Model
         'allow_general_knowledge', 'public_key', 'status',
     ];
 
-    protected $casts = ['allow_general_knowledge' => 'boolean'];
+    protected $casts = [
+        'allow_general_knowledge' => 'boolean',
+        'instructions'            => 'encrypted',
+    ];
 
     protected static function booted(): void
     {

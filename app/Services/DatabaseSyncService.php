@@ -14,7 +14,8 @@ class DatabaseSyncService
 
     public function __construct(private RagService $rag) {}
 
-    // Opens a short-lived connection to verify credentials and list available tables/collections.
+    // Opens a short-lived connection to verify credentials and list available tables/collections,
+    // each with its column names so the client can exclude sensitive ones before syncing.
     public function listTables(string $driver, string $host, int $port, string $database, string $username, string $password): array
     {
         if ($driver === 'mongodb') {
@@ -23,13 +24,54 @@ class DatabaseSyncService
 
         $pdo = $this->connect($driver, $host, $port, $database, $username, $password);
 
-        return match ($driver) {
+        $tableNames = match ($driver) {
             'mysql', 'mariadb' => $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN),
             'pgsql' => $pdo->query("SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename")->fetchAll(PDO::FETCH_COLUMN),
             'sqlsrv' => $pdo->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'")->fetchAll(PDO::FETCH_COLUMN),
             'oci' => $pdo->query('SELECT table_name FROM user_tables ORDER BY table_name')->fetchAll(PDO::FETCH_COLUMN),
             'sqlite' => $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")->fetchAll(PDO::FETCH_COLUMN),
         };
+
+        return array_map(fn ($name) => [
+            'name'    => $name,
+            'columns' => $this->listColumnsSql($pdo, $driver, $name),
+        ], $tableNames);
+    }
+
+    // Lists a table's column names for a given driver, used to populate the per-column exclude UI.
+    private function listColumnsSql(PDO $pdo, string $driver, string $table): array
+    {
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $table)) {
+            return [];
+        }
+
+        try {
+            return match ($driver) {
+                'mysql', 'mariadb' => $pdo->query("SHOW COLUMNS FROM `{$table}`")->fetchAll(PDO::FETCH_COLUMN),
+                'pgsql' => (function () use ($pdo, $table) {
+                    $stmt = $pdo->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = ? ORDER BY ordinal_position");
+                    $stmt->execute([$table]);
+                    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+                })(),
+                'sqlsrv' => (function () use ($pdo, $table) {
+                    $stmt = $pdo->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION");
+                    $stmt->execute([$table]);
+                    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+                })(),
+                'oci' => (function () use ($pdo, $table) {
+                    $stmt = $pdo->prepare("SELECT column_name FROM user_tab_columns WHERE table_name = UPPER(?) ORDER BY column_id");
+                    $stmt->execute([$table]);
+                    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+                })(),
+                'sqlite' => array_map(
+                    fn ($row) => $row['name'],
+                    $pdo->query("PRAGMA table_info(\"{$table}\")")->fetchAll(PDO::FETCH_ASSOC),
+                ),
+                default => [],
+            };
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     // Lists tables/collections available on an already-saved connection, using its stored credentials.
@@ -101,8 +143,22 @@ class DatabaseSyncService
             $stmt = $pdo->query($sql);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $this->upsertTableDocument($connection, $table, $rows);
+            $this->upsertTableDocument($connection, $table, $this->stripExcludedColumns($connection, $table, $rows));
         }
+    }
+
+    // Drops any columns the client marked as excluded for this table before the data ever
+    // reaches the knowledge base — keeps sensitive fields (SSNs, emails, etc.) out of what
+    // public chatbot visitors can retrieve, even though they were briefly fetched from the DB.
+    private function stripExcludedColumns(DatabaseConnection $connection, string $table, array $rows): array
+    {
+        $excluded = $connection->excluded_columns[$table] ?? [];
+
+        if (empty($excluded) || empty($rows)) {
+            return $rows;
+        }
+
+        return array_map(fn ($row) => array_diff_key($row, array_flip($excluded)), $rows);
     }
 
     private function syncMongo(DatabaseConnection $connection): void
@@ -126,7 +182,7 @@ class DatabaseSyncService
                 $rows[] = $this->bsonToArray($document);
             }
 
-            $this->upsertTableDocument($connection, $collection, $rows);
+            $this->upsertTableDocument($connection, $collection, $this->stripExcludedColumns($connection, $collection, $rows));
         }
     }
 
@@ -156,10 +212,16 @@ class DatabaseSyncService
     private function listMongoCollections(string $host, int $port, string $database, string $username, string $password): array
     {
         $client = $this->connectMongo($host, $port, $database, $username, $password);
+        $db     = $client->selectDatabase($database);
 
         $collections = [];
-        foreach ($client->selectDatabase($database)->listCollections() as $info) {
-            $collections[] = $info->getName();
+        foreach ($db->listCollections() as $info) {
+            $name   = $info->getName();
+            $sample = $db->selectCollection($name)->findOne();
+            $collections[] = [
+                'name'    => $name,
+                'columns' => $sample ? array_keys($this->bsonToArray($sample)) : [],
+            ];
         }
 
         return $collections;

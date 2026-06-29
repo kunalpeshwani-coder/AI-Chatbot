@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Chatbot;
 use App\Models\DatabaseConnection;
 use App\Services\DatabaseSyncService;
@@ -47,12 +48,20 @@ class ChatbotDatabaseController extends Controller
 
         $data = $this->validateCredentials($request);
         $data['password'] ??= '';
-        $data['tables'] = $request->validate([
-            'tables'   => ['required', 'array', 'min:1'],
-            'tables.*' => ['string'],
-        ])['tables'];
+        $extra = $request->validate([
+            'tables'             => ['required', 'array', 'min:1'],
+            'tables.*'           => ['string'],
+            'excluded_columns'   => ['nullable', 'array'],
+            'excluded_columns.*' => ['array'],
+        ]);
+        $data['tables']           = $extra['tables'];
+        $data['excluded_columns'] = $extra['excluded_columns'] ?? [];
 
         $connection = $chatbot->databaseConnections()->create($data);
+
+        AuditLog::record('database_connection.created', $connection, [
+            'chatbot_id' => $chatbot->id, 'driver' => $connection->driver, 'database' => $connection->database,
+        ]);
 
         $this->sync->sync($connection);
 
@@ -91,12 +100,15 @@ class ChatbotDatabaseController extends Controller
         abort_if($connection->chatbot_id !== $chatbot->id, 404);
 
         $data = $request->validate([
-            'tables'   => ['required', 'array', 'min:1'],
-            'tables.*' => ['string'],
+            'tables'             => ['required', 'array', 'min:1'],
+            'tables.*'           => ['string'],
+            'excluded_columns'   => ['nullable', 'array'],
+            'excluded_columns.*' => ['array'],
         ]);
 
         $connection->update([
-            'tables' => array_values(array_unique([...$connection->tables, ...$data['tables']])),
+            'tables'           => array_values(array_unique([...$connection->tables, ...$data['tables']])),
+            'excluded_columns' => [...($connection->excluded_columns ?? []), ...($data['excluded_columns'] ?? [])],
         ]);
 
         $this->sync->sync($connection);
@@ -108,6 +120,10 @@ class ChatbotDatabaseController extends Controller
     {
         abort_if($chatbot->user_id !== $request->user()->id, 403);
         abort_if($connection->chatbot_id !== $chatbot->id, 404);
+
+        AuditLog::record('database_connection.deleted', $connection, [
+            'chatbot_id' => $chatbot->id, 'driver' => $connection->driver, 'database' => $connection->database,
+        ]);
 
         $connection->delete();
 

@@ -21,12 +21,20 @@ class AIService
 
         $provider = config('ai.provider', 'openai');
 
-        return match ($provider) {
+        $reply = match ($provider) {
             'openai' => $this->chatWithOpenAI($messages),
             'claude' => $this->chatWithClaude($messages),
             'gemini' => $this->chatWithGemini($messages),
             default  => throw new \InvalidArgumentException("Unknown AI provider: {$provider}"),
         };
+
+        // Backstop in case a jailbreak/prompt-injection got the model to ignore the system-prompt
+        // safety guardrail — scrub anything that looks like a card number/SSN before it goes out.
+        if (!empty($reply['content'])) {
+            $reply['content'] = OutputFilter::sanitize($reply['content']);
+        }
+
+        return $reply;
     }
 
     private function chatWithOpenAI(array $messages): array

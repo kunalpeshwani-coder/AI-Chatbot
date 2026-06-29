@@ -10,15 +10,16 @@ class DatabaseConnection extends Model
 {
     protected $fillable = [
         'chatbot_id', 'driver', 'host', 'port', 'database', 'username',
-        'password', 'tables', 'status', 'error_message', 'last_synced_at',
+        'password', 'tables', 'excluded_columns', 'status', 'error_message', 'last_synced_at',
     ];
 
     protected $hidden = ['password'];
 
     protected $casts = [
-        'tables'         => 'array',
-        'password'       => 'encrypted',
-        'last_synced_at' => 'datetime',
+        'tables'           => 'array',
+        'excluded_columns' => 'array',
+        'password'         => 'encrypted',
+        'last_synced_at'   => 'datetime',
     ];
 
     public function chatbot(): BelongsTo
