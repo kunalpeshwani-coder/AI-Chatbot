@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Chatbot;
 use App\Models\DatabaseConnection;
 use App\Services\DatabaseSyncService;
+use App\Services\SsrfGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ChatbotDatabaseController extends Controller
 {
@@ -130,6 +132,14 @@ class ChatbotDatabaseController extends Controller
         $data['host']     ??= '';
         $data['port']     ??= 0;
         $data['username'] ??= '';
+
+        if (!$isFileBased) {
+            try {
+                SsrfGuard::assertSafeHost($data['host']);
+            } catch (\InvalidArgumentException $e) {
+                throw ValidationException::withMessages(['host' => $e->getMessage()]);
+            }
+        }
 
         return $data;
     }

@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Chatbot;
 use App\Models\Document;
 use App\Services\DocumentService;
+use App\Services\RagService;
+use App\Services\SsrfGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ChatbotDocumentController extends Controller
 {
-    public function __construct(private DocumentService $extractor) {}
+    public function __construct(private DocumentService $extractor, private RagService $rag) {}
 
     public function index(Request $request, Chatbot $chatbot): JsonResponse
     {
@@ -48,6 +50,10 @@ class ChatbotDocumentController extends Controller
                 'extracted_text' => $text,
                 'status'         => $text !== '' ? 'processed' : 'failed',
             ]);
+
+            if ($document->status === 'processed') {
+                $this->rag->indexDocument($document);
+            }
         } catch (\Throwable) {
             $document->update(['status' => 'failed']);
         }
@@ -64,6 +70,12 @@ class ChatbotDocumentController extends Controller
             'url' => ['required', 'url', 'max:2048'],
         ]);
 
+        try {
+            SsrfGuard::assertSafeUrl($data['url']);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
         $document = $chatbot->documents()->create([
             'original_name' => $data['url'],
             'source_url'     => $data['url'],
@@ -79,6 +91,10 @@ class ChatbotDocumentController extends Controller
                 'extracted_text' => $text,
                 'status'         => $text !== '' ? 'processed' : 'failed',
             ]);
+
+            if ($document->status === 'processed') {
+                $this->rag->indexDocument($document);
+            }
         } catch (\Throwable) {
             $document->update(['status' => 'failed']);
         }

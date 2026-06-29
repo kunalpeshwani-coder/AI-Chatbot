@@ -22,7 +22,9 @@ class DocumentService
     public function extractFromUrl(string $url): string
     {
         try {
-            $response = Http::timeout(20)->withoutVerifying()->withHeaders([
+            SsrfGuard::assertSafeUrl($url);
+
+            $response = Http::timeout(20)->withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (compatible; AIChatbotKnowledgeBaseBot/1.0)',
             ])->get($url);
 

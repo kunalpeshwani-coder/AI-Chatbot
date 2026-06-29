@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\RagService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -44,7 +45,9 @@ class Chatbot extends Model
         return $this->hasMany(Conversation::class);
     }
 
-    public function getSystemPrompt(): string
+    // $query is the user's latest message — when provided and the chatbot has an indexed RAG
+    // chunk store, only the most relevant excerpts are injected instead of dumping every document.
+    public function getSystemPrompt(?string $query = null): string
     {
         $parts = [
             "You are a helpful AI assistant for \"{$this->name}\".",
@@ -64,14 +67,27 @@ class Chatbot extends Model
         $docs = $this->documents()->where('status', 'processed')->get();
 
         if ($docs->isNotEmpty()) {
-            $parts[] = "\nUse the following reference documents to answer questions accurately:";
+            $ragChunks = $query ? app(RagService::class)->retrieve($this, $query) : [];
 
-            $budget = 6000;
-            foreach ($docs as $doc) {
-                if ($budget <= 0) break;
-                $text    = substr($doc->extracted_text ?? '', 0, $budget);
-                $budget -= strlen($text);
-                $parts[] = "\n--- Document: {$doc->original_name} ---\n{$text}";
+            if (!empty($ragChunks)) {
+                $parts[] = "\nUse the following reference excerpts — retrieved as most relevant to the "
+                    . "user's latest question — to answer accurately:";
+
+                foreach ($ragChunks as $chunk) {
+                    $parts[] = "\n--- Excerpt ---\n{$chunk->content}";
+                }
+            } else {
+                // No chunk index yet (e.g. embeddings unavailable, or documents added before RAG
+                // was enabled) — fall back to the old behaviour of dumping truncated raw text.
+                $parts[] = "\nUse the following reference documents to answer questions accurately:";
+
+                $budget = 6000;
+                foreach ($docs as $doc) {
+                    if ($budget <= 0) break;
+                    $text    = substr($doc->extracted_text ?? '', 0, $budget);
+                    $budget -= strlen($text);
+                    $parts[] = "\n--- Document: {$doc->original_name} ---\n{$text}";
+                }
             }
 
             if (!$this->instructions) {

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Document extends Model
 {
@@ -13,6 +14,15 @@ class Document extends Model
     ];
 
     protected $hidden = ['extracted_text', 'file_path'];
+
+    protected $casts = [
+        'extracted_text' => 'encrypted',
+    ];
+
+    public function chunks(): HasMany
+    {
+        return $this->hasMany(DocumentChunk::class);
+    }
 
     public function domain(): BelongsTo
     {

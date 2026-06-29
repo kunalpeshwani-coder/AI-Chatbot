@@ -12,6 +12,8 @@ class DatabaseSyncService
     private const ROW_LIMIT       = 500;
     private const CHAR_BUDGET_PER_TABLE = 8000;
 
+    public function __construct(private RagService $rag) {}
+
     // Opens a short-lived connection to verify credentials and list available tables/collections.
     public function listTables(string $driver, string $host, int $port, string $database, string $username, string $password): array
     {
@@ -145,8 +147,10 @@ class DatabaseSyncService
         if ($document) {
             $document->update($attrs);
         } else {
-            $connection->documents()->create($attrs);
+            $document = $connection->documents()->create($attrs);
         }
+
+        $this->rag->indexDocument($document->fresh());
     }
 
     private function listMongoCollections(string $host, int $port, string $database, string $username, string $password): array

@@ -60,10 +60,6 @@ class AIService
                         'timeout'       => 45,
                         'ignore_errors' => true,
                     ],
-                    'ssl' => [
-                        'verify_peer'      => false,
-                        'verify_peer_name' => false,
-                    ],
                 ]);
 
                 $baseUrl = rtrim(config('ai.openai.base_url', 'https://api.openai.com/v1'), '/');
@@ -143,7 +139,7 @@ class AIService
                 $body['system'] = $system;
             }
 
-            $response = Http::timeout(55)->withoutVerifying()->withHeaders([
+            $response = Http::timeout(55)->withHeaders([
                 'x-api-key'         => $apiKey,
                 'anthropic-version' => '2023-06-01',
                 'content-type'      => 'application/json',
@@ -203,10 +199,6 @@ class AIService
                     'content'       => $payload,
                     'timeout'       => 55,
                     'ignore_errors' => true,
-                ],
-                'ssl' => [
-                    'verify_peer'      => false,
-                    'verify_peer_name' => false,
                 ],
             ]);
 

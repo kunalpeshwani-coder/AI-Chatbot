@@ -50,7 +50,7 @@ class WidgetController extends Controller
             ->orderBy('created_at')
             ->get()
             ->map(fn($m) => ['role' => $m->role, 'content' => $m->content])
-            ->prepend(['role' => 'system', 'content' => $chatbot->getSystemPrompt()])
+            ->prepend(['role' => 'system', 'content' => $chatbot->getSystemPrompt($request->content)])
             ->toArray();
 
         $reply = $this->ai->chat($history);

@@ -81,8 +81,11 @@ Route::middleware('auth')->prefix('api')->group(function () {
     });
 });
 
-// Public embeddable widget — no auth, runs inside an iframe on the client's own website
-Route::get('/widget/{publicKey}', [WidgetController::class, 'show']);
-Route::post('/widget/{publicKey}/messages', [WidgetController::class, 'sendMessage']);
+// Public embeddable widget — no auth, runs inside an iframe on the client's own website.
+// Rate-limited per IP since these endpoints are open to the internet and proxy to paid AI APIs.
+Route::middleware('throttle:30,1')->group(function () {
+    Route::get('/widget/{publicKey}', [WidgetController::class, 'show']);
+    Route::post('/widget/{publicKey}/messages', [WidgetController::class, 'sendMessage']);
+});
 
 require __DIR__.'/auth.php';

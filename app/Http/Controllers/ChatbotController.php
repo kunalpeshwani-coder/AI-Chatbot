@@ -68,8 +68,10 @@ class ChatbotController extends Controller
             'messages.*.content' => ['required', 'string', 'max:10000'],
         ]);
 
+        $lastUserMessage = collect($data['messages'])->where('role', 'user')->last()['content'] ?? null;
+
         $history = array_merge(
-            [['role' => 'system', 'content' => $chatbot->getSystemPrompt()]],
+            [['role' => 'system', 'content' => $chatbot->getSystemPrompt($lastUserMessage)]],
             $data['messages'],
         );
 
