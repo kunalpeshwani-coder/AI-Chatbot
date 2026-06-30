@@ -123,4 +123,10 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    // Optional one-time admin bootstrap for fresh deployments with no shell access —
+    // see App\Console\Commands\EnsureAdminUser. Unset in production once the admin exists.
+    'admin_email'    => env('ADMIN_EMAIL'),
+    'admin_password' => env('ADMIN_PASSWORD'),
+    'admin_name'     => env('ADMIN_NAME', 'Admin'),
+
 ];

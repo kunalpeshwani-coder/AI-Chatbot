@@ -21,6 +21,8 @@ RUN php artisan config:clear
 
 EXPOSE 10000
 
-# Render sets $PORT; runs migrations on boot then serves the app.
+# Render sets $PORT; runs migrations on boot, bootstraps an admin if ADMIN_EMAIL/
+# ADMIN_PASSWORD are set (no-op otherwise), then serves the app.
 CMD php artisan migrate --force && php artisan storage:link --force && \
+    php artisan app:ensure-admin-user && \
     php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
