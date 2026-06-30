@@ -12,7 +12,7 @@
     {{-- Nav --}}
     <nav class="flex items-center justify-between px-8 py-5">
         <a href="https://journai.us" target="_blank" rel="noopener noreferrer">
-            <img src="/journai-logo.svg" alt="JournAI" class="h-7 w-auto">
+            <img src="/journai-logo-horizontal.png" alt="JournAI" class="h-7 w-auto">
         </a>
 
         <div class="flex items-center gap-3">
@@ -47,16 +47,10 @@
                 Open Chatbot &rarr;
             </a>
         @else
-            <div class="flex flex-col sm:flex-row items-center gap-4">
-                <a href="{{ route('register') }}"
-                   class="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 rounded-xl text-base font-semibold transition shadow-lg shadow-black/40">
-                    Get Started &mdash; it&rsquo;s free
-                </a>
-                <a href="{{ route('login') }}"
-                   class="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 rounded-xl text-base font-semibold transition shadow-lg shadow-black/40">
-                    Log In
-                </a>
-            </div>
+            <a href="{{ route('login') }}"
+               class="inline-flex items-center gap-2 px-7 py-3.5 bg-gold-600 hover:bg-gold-500 rounded-xl text-base font-semibold transition shadow-lg shadow-black/40">
+                Get Started &mdash; it&rsquo;s free
+            </a>
         @endauth
     </main>
 

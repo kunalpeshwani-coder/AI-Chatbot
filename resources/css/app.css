@@ -15,15 +15,28 @@ body {
     -webkit-text-fill-color: transparent;
 }
 
-/* Browser autofill paints its own light background over inputs — force it back to the theme */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
+/* Browser autofill paints its own light background over inputs — force it back to the theme.
+   Scoped separately for dark inputs (bg-navy-900, the default) vs light/white-card inputs
+   (bg-white, used on the login/signup/reset-password forms) since they need opposite colors. */
+input:not(.bg-white):-webkit-autofill,
+input:not(.bg-white):-webkit-autofill:hover,
+input:not(.bg-white):-webkit-autofill:focus,
+input:not(.bg-white):-webkit-autofill:active {
     -webkit-box-shadow: 0 0 0 1000px #022647 inset;
     box-shadow: 0 0 0 1000px #022647 inset;
     -webkit-text-fill-color: #ffffff;
     caret-color: #ffffff;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+input.bg-white:-webkit-autofill,
+input.bg-white:-webkit-autofill:hover,
+input.bg-white:-webkit-autofill:focus,
+input.bg-white:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+    box-shadow: 0 0 0 1000px #ffffff inset;
+    -webkit-text-fill-color: #022647;
+    caret-color: #022647;
     transition: background-color 5000s ease-in-out 0s;
 }
 
