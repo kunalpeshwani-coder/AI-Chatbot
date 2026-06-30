@@ -7,6 +7,7 @@ use App\Models\Chatbot;
 use App\Models\Document;
 use App\Services\DocumentService;
 use App\Services\FileSignatureGuard;
+use App\Services\PiiRedactor;
 use App\Services\RagService;
 use App\Services\SsrfGuard;
 use Illuminate\Http\JsonResponse;
@@ -55,7 +56,7 @@ class ChatbotDocumentController extends Controller
 
         try {
             $absolutePath = Storage::disk('local')->path($stored);
-            $text = $this->extractor->extractText($absolutePath, $fileType);
+            $text = PiiRedactor::redact($this->extractor->extractText($absolutePath, $fileType));
 
             $document->update([
                 'extracted_text' => $text,
@@ -98,7 +99,7 @@ class ChatbotDocumentController extends Controller
         AuditLog::record('document.url_added', $document, ['chatbot_id' => $chatbot->id, 'url' => $data['url']]);
 
         try {
-            $text = $this->extractor->extractFromUrl($data['url']);
+            $text = PiiRedactor::redact($this->extractor->extractFromUrl($data['url']));
 
             $document->update([
                 'extracted_text' => $text,

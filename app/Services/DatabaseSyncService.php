@@ -188,7 +188,9 @@ class DatabaseSyncService
 
     private function upsertTableDocument(DatabaseConnection $connection, string $name, array $rows): void
     {
-        $text     = $this->rowsToText($name, $rows);
+        // Column exclusion (stripExcludedColumns) is opt-in and only catches what the client
+        // remembered to exclude. PII redaction is a backstop for whatever they didn't.
+        $text     = PiiRedactor::redact($this->rowsToText($name, $rows));
         $document = $connection->documents()->where('original_name', $name)->first();
 
         $attrs = [
