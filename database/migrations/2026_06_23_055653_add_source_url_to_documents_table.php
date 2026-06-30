@@ -13,7 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         // Website-URL sources don't have a stored file, so file_path must become nullable.
-        DB::statement('ALTER TABLE documents MODIFY file_path VARCHAR(255) NULL');
+        match (Schema::getConnection()->getDriverName()) {
+            'pgsql' => DB::statement('ALTER TABLE documents ALTER COLUMN file_path DROP NOT NULL'),
+            default => DB::statement('ALTER TABLE documents MODIFY file_path VARCHAR(255) NULL'),
+        };
 
         Schema::table('documents', function (Blueprint $table) {
             $table->string('source_url')->nullable()->after('original_name');
@@ -29,6 +32,9 @@ return new class extends Migration
             $table->dropColumn('source_url');
         });
 
-        DB::statement('ALTER TABLE documents MODIFY file_path VARCHAR(255) NOT NULL');
+        match (Schema::getConnection()->getDriverName()) {
+            'pgsql' => DB::statement('ALTER TABLE documents ALTER COLUMN file_path SET NOT NULL'),
+            default => DB::statement('ALTER TABLE documents MODIFY file_path VARCHAR(255) NOT NULL'),
+        };
     }
 };

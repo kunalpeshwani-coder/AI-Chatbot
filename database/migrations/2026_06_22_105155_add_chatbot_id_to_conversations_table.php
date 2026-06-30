@@ -14,7 +14,10 @@ return new class extends Migration
     {
         // Anonymous visitors chatting through an embedded public widget have no
         // logged-in user, so user_id must become nullable.
-        DB::statement('ALTER TABLE conversations MODIFY user_id BIGINT UNSIGNED NULL');
+        match (Schema::getConnection()->getDriverName()) {
+            'pgsql' => DB::statement('ALTER TABLE conversations ALTER COLUMN user_id DROP NOT NULL'),
+            default => DB::statement('ALTER TABLE conversations MODIFY user_id BIGINT UNSIGNED NULL'),
+        };
 
         Schema::table('conversations', function (Blueprint $table) {
             $table->foreignId('chatbot_id')->nullable()->after('domain_id')
@@ -33,6 +36,9 @@ return new class extends Migration
             $table->dropColumn('visitor_token');
         });
 
-        DB::statement('ALTER TABLE conversations MODIFY user_id BIGINT UNSIGNED NOT NULL');
+        match (Schema::getConnection()->getDriverName()) {
+            'pgsql' => DB::statement('ALTER TABLE conversations ALTER COLUMN user_id SET NOT NULL'),
+            default => DB::statement('ALTER TABLE conversations MODIFY user_id BIGINT UNSIGNED NOT NULL'),
+        };
     }
 };

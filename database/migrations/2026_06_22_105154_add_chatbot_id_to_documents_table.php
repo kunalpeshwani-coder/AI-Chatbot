@@ -13,8 +13,12 @@ return new class extends Migration
     public function up(): void
     {
         // Documents can now belong to either an admin-managed domain OR a client's own
-        // chatbot, so domain_id must become nullable (raw SQL avoids needing doctrine/dbal).
-        DB::statement('ALTER TABLE documents MODIFY domain_id BIGINT UNSIGNED NULL');
+        // chatbot, so domain_id must become nullable (raw SQL avoids needing doctrine/dbal —
+        // driver-specific because MySQL's MODIFY syntax isn't valid on Postgres).
+        match (Schema::getConnection()->getDriverName()) {
+            'pgsql' => DB::statement('ALTER TABLE documents ALTER COLUMN domain_id DROP NOT NULL'),
+            default => DB::statement('ALTER TABLE documents MODIFY domain_id BIGINT UNSIGNED NULL'),
+        };
 
         Schema::table('documents', function (Blueprint $table) {
             $table->foreignId('chatbot_id')->nullable()->after('domain_id')
@@ -31,6 +35,9 @@ return new class extends Migration
             $table->dropConstrainedForeignId('chatbot_id');
         });
 
-        DB::statement('ALTER TABLE documents MODIFY domain_id BIGINT UNSIGNED NOT NULL');
+        match (Schema::getConnection()->getDriverName()) {
+            'pgsql' => DB::statement('ALTER TABLE documents ALTER COLUMN domain_id SET NOT NULL'),
+            default => DB::statement('ALTER TABLE documents MODIFY domain_id BIGINT UNSIGNED NOT NULL'),
+        };
     }
 };
