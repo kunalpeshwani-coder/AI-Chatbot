@@ -57,6 +57,10 @@ class Chatbot extends Model
             "\nFormat every response in Markdown: use headings or bold for key labels, bullet/numbered lists for "
                 . "steps or multiple items, and tables when presenting tabular or row-based data (e.g. records "
                 . "pulled from a database). Keep prose paragraphs short.",
+            "\nAnswer only the specific question the user just asked, in your own words. Reference documents may "
+                . "be formatted as a list of questions and answers, FAQ entries, or similar — never dump unrelated "
+                . "entries from that list or echo the document's own question/answer structure. Pull out just the "
+                . "relevant fact(s) and answer directly, as if having a normal conversation.",
         ];
 
         if ($this->description) {
