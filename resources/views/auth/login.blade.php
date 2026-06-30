@@ -41,14 +41,14 @@
             @endif
         </div>
 
-        <div class="flex flex-col gap-3 mt-4">
-            <x-primary-button class="w-full justify-center">
+        <div class="flex flex-col gap-3 mt-8">
+            <x-primary-button class="w-full justify-center" :flat="true">
                 {{ __('Log in') }}
             </x-primary-button>
 
             <a href="{{ route('register') }}"
-               class="w-full inline-flex items-center justify-center px-5 py-2.5 bg-white border border-gold-600 rounded-xl font-semibold text-sm text-gold-700 hover:bg-gold-600/10 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                {{ __('Sign Up') }}
+               class="w-full inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-white rounded-xl font-semibold text-sm text-navy-700 hover:bg-navy-700/5 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <span class="font-normal">{{ __('Not registered?') }}</span> {{ __('Sign Up') }}
             </a>
         </div>
     </form>
