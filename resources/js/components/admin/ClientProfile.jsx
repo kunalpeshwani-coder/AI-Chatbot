@@ -11,7 +11,7 @@ export default function ClientProfile({ clientId, onBack }) {
 
     if (loading) {
         return (
-            <div className="flex-1 flex items-center justify-center rounded-2xl border border-white/10 bg-navy-900/60">
+            <div className="flex-1 flex items-center justify-center rounded-2xl border border-white/10 bg-navy-950">
                 <p className="text-navy-300 text-sm">Loading…</p>
             </div>
         );
@@ -19,7 +19,7 @@ export default function ClientProfile({ clientId, onBack }) {
 
     if (!client) {
         return (
-            <div className="flex-1 flex items-center justify-center rounded-2xl border border-white/10 bg-navy-900/60">
+            <div className="flex-1 flex items-center justify-center rounded-2xl border border-white/10 bg-navy-950">
                 <p className="text-navy-300 text-sm">Client not found.</p>
             </div>
         );
@@ -41,7 +41,7 @@ export default function ClientProfile({ clientId, onBack }) {
                 Back to Clients
             </button>
 
-            <div className="flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-navy-900/60 p-6">
+            <div className="flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-navy-950 p-6">
                 {/* Profile header */}
                 <div className="flex items-start gap-4 mb-6 pb-6 border-b border-white/10">
                     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gold-400 to-gold-700 flex items-center justify-center text-xl font-semibold flex-shrink-0 shadow-md shadow-black/40 ring-1 ring-white/10">
@@ -86,7 +86,7 @@ export default function ClientProfile({ clientId, onBack }) {
 
 function StatCard({ label, value, small }) {
     return (
-        <div className="bg-navy-800/60 border border-white/10 rounded-xl px-4 py-3">
+        <div className="bg-navy-800 border border-white/10 rounded-xl px-4 py-3">
             <p className={`font-semibold text-white ${small ? 'text-sm' : 'text-2xl'}`}>{value}</p>
             <p className="text-xs text-navy-300 mt-0.5">{label}</p>
         </div>
@@ -102,7 +102,7 @@ function ChatbotRow({ bot }) {
     };
 
     return (
-        <div className="flex items-center gap-3 bg-navy-800/40 border border-white/10 rounded-xl px-4 py-3">
+        <div className="flex items-center gap-3 bg-navy-800 border border-white/10 rounded-xl px-4 py-3">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-gold-400 to-gold-700 flex items-center justify-center flex-shrink-0">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

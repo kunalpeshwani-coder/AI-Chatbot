@@ -28,7 +28,7 @@ export default function ClientsManager() {
     }
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden min-h-0 rounded-2xl border border-white/10 bg-navy-900/60">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0 rounded-2xl border border-white/10 bg-navy-950">
             <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between flex-shrink-0">
                 <span className="text-sm font-semibold text-navy-200">All Clients</span>
                 <span className="text-xs text-navy-300">{clients.length} registered</span>

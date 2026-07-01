@@ -52,7 +52,7 @@ export default function AdminDashboard() {
 
             {/* Main content */}
             <main className="flex-1 flex flex-col overflow-hidden min-h-0 bg-navy-800 p-6">
-                <div className="flex-shrink-0 bg-navy-700 border border-white/10 rounded-2xl px-6 py-5 mb-5 shadow-md shadow-black/20">
+                <div className="flex-shrink-0 px-2 pb-5">
                     <h1 className="text-xl font-semibold text-white">Clients</h1>
                 </div>
                 <ClientsManager />
