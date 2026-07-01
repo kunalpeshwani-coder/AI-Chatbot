@@ -45,16 +45,16 @@ class AIService
             return $this->missingKeyResponse('OpenAI', 'OPENAI_API_KEY');
         }
 
-        $retries = 3;
+        $maxRetries = 5;
+        $baseUrl    = rtrim(config('ai.openai.base_url', 'https://api.openai.com/v1'), '/');
+        $payload    = json_encode([
+            'model'      => config('ai.openai.model', 'gpt-4o-mini'),
+            'messages'   => $messages,
+            'max_tokens' => 500,
+        ]);
 
-        for ($attempt = 1; $attempt <= $retries; $attempt++) {
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
-                $payload = json_encode([
-                    'model'      => config('ai.openai.model', 'gpt-4o-mini'),
-                    'messages'   => $messages,
-                    'max_tokens' => 500,
-                ]);
-
                 $context = stream_context_create([
                     'http' => [
                         'method'        => 'POST',
@@ -70,24 +70,34 @@ class AIService
                     ],
                 ]);
 
-                $baseUrl = rtrim(config('ai.openai.base_url', 'https://api.openai.com/v1'), '/');
-                $body    = file_get_contents("{$baseUrl}/chat/completions", false, $context);
+                $body = file_get_contents("{$baseUrl}/chat/completions", false, $context);
 
                 if ($body === false) {
+                    if ($attempt < $maxRetries) {
+                        sleep(2 ** $attempt);
+                        continue;
+                    }
                     return $this->apiErrorResponse('OpenAI', 'Could not connect to OpenAI API.');
                 }
 
-                $data = json_decode($body, true);
+                $data    = json_decode($body, true);
+                $errCode = $data['error']['code'] ?? ($data['error']['type'] ?? null);
 
-                // Rate limit (OpenAI format or OpenRouter's numeric 429) — wait and retry
-                $errCode = $data['error']['code'] ?? null;
-                if ($errCode === 'rate_limit_exceeded' || $errCode === 429) {
-                    $retryAfter = $data['error']['metadata']['retry_after_seconds'] ?? (5 * $attempt);
-                    if ($attempt < $retries) {
-                        sleep((int) ceil($retryAfter));
+                // Rate limit — read Retry-After from response headers if present, else exponential backoff
+                if ($errCode === 'rate_limit_exceeded' || $errCode === 429 || $errCode === '429') {
+                    if ($attempt < $maxRetries) {
+                        // $http_response_header is set by file_get_contents
+                        $retryAfter = $this->parseRetryAfter($http_response_header ?? []);
+                        $wait       = $retryAfter ?? min(2 ** $attempt, 60);
+                        sleep((int) ceil($wait));
                         continue;
                     }
-                    return $this->apiErrorResponse('OpenAI', 'Rate limit exceeded. Please wait a moment and try again.');
+                    return $this->apiErrorResponse('OpenAI', 'Rate limit exceeded. Please try again in a moment.');
+                }
+
+                // Quota exhausted — no point retrying
+                if ($errCode === 'insufficient_quota') {
+                    return $this->apiErrorResponse('OpenAI', 'API quota exhausted. Please check your OpenAI billing.');
                 }
 
                 if (isset($data['error'])) {
@@ -97,7 +107,8 @@ class AIService
                 $content = $data['choices'][0]['message']['content'] ?? null;
 
                 if ($content === null || $content === '') {
-                    if ($attempt < $retries) {
+                    if ($attempt < $maxRetries) {
+                        sleep(2 ** $attempt);
                         continue;
                     }
                     return $this->apiErrorResponse('OpenAI', 'Received an empty response from the model.');
@@ -109,6 +120,10 @@ class AIService
                 ];
 
             } catch (\Throwable $e) {
+                if ($attempt < $maxRetries) {
+                    sleep(2 ** $attempt);
+                    continue;
+                }
                 return $this->apiErrorResponse('OpenAI', $e->getMessage());
             }
         }
@@ -231,6 +246,19 @@ class AIService
         } catch (\Throwable $e) {
             return $this->apiErrorResponse('Gemini', $e->getMessage());
         }
+    }
+
+    private function parseRetryAfter(array $headers): ?int
+    {
+        foreach ($headers as $header) {
+            if (stripos($header, 'Retry-After:') === 0) {
+                $value = trim(substr($header, strlen('Retry-After:')));
+                if (is_numeric($value)) {
+                    return (int) $value;
+                }
+            }
+        }
+        return null;
     }
 
     private function missingKeyResponse(string $providerName, string $envKey): array
