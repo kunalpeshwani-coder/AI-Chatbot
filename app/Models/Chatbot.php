@@ -92,7 +92,7 @@ class Chatbot extends Model
                 // was enabled) — fall back to the old behaviour of dumping truncated raw text.
                 $parts[] = "\nUse the following reference documents to answer questions accurately:";
 
-                $budget = 6000;
+                $budget = 15000;
                 foreach ($docs as $doc) {
                     if ($budget <= 0) break;
                     $text    = substr($doc->extracted_text ?? '', 0, $budget);
@@ -101,14 +101,13 @@ class Chatbot extends Model
                 }
             }
 
-            if (!$this->instructions) {
-                $parts[] = $this->allow_general_knowledge
-                    ? "\nPrefer the documents above when they cover the question. If a question goes beyond "
-                        . "what the documents cover, answer it using your own general knowledge instead of refusing — "
-                        . "just don't contradict the documents."
-                    : "\nOnly answer using the documents above. If the answer isn't in the documents, say you don't "
-                        . "have that information — do not use outside knowledge or make anything up.";
-            }
+            // Always enforce the knowledge scope regardless of whether custom instructions exist.
+            $parts[] = $this->allow_general_knowledge
+                ? "\nPrefer the documents above when they cover the question. If a question goes beyond "
+                    . "what the documents cover, answer it using your own general knowledge instead of refusing — "
+                    . "just don't contradict the documents."
+                : "\nOnly answer using the documents above. If the answer isn't in the documents, say you don't "
+                    . "have that information — do not use outside knowledge or make anything up.";
         }
 
         // Non-overridable safety guardrail — applies no matter what the owner's custom instructions

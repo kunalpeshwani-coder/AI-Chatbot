@@ -12,6 +12,17 @@ class DatabaseSyncService
     private const ROW_LIMIT       = 500;
     private const CHAR_BUDGET_PER_TABLE = 8000;
 
+    // Column names that are always stripped before data reaches the AI, regardless of user settings.
+    // These typically contain credentials or hashes that are useless to a language model and
+    // dangerous to expose even indirectly.
+    private const SENSITIVE_COLUMN_PATTERNS = [
+        'password', 'passwd', 'pwd',
+        'secret', 'token', 'api_key', 'apikey', 'access_key',
+        'private_key', 'encryption_key', 'hash', 'salt',
+        'otp', 'pin', 'cvv', 'ssn', 'passport',
+        'remember_token',
+    ];
+
     public function __construct(private RagService $rag) {}
 
     // Opens a short-lived connection to verify credentials and list available tables/collections,
@@ -147,18 +158,30 @@ class DatabaseSyncService
         }
     }
 
-    // Drops any columns the client marked as excluded for this table before the data ever
-    // reaches the knowledge base — keeps sensitive fields (SSNs, emails, etc.) out of what
-    // public chatbot visitors can retrieve, even though they were briefly fetched from the DB.
+    // Drops any columns the client marked as excluded, plus always strips columns whose names
+    // match known sensitive patterns (passwords, tokens, secrets, etc.) — these are useless
+    // to a language model and must never reach the AI regardless of user settings.
     private function stripExcludedColumns(DatabaseConnection $connection, string $table, array $rows): array
     {
-        $excluded = $connection->excluded_columns[$table] ?? [];
-
-        if (empty($excluded) || empty($rows)) {
+        if (empty($rows)) {
             return $rows;
         }
 
-        return array_map(fn ($row) => array_diff_key($row, array_flip($excluded)), $rows);
+        $userExcluded = $connection->excluded_columns[$table] ?? [];
+
+        // Build the set of auto-blocked column names from the actual columns present in the data.
+        $autoExcluded = array_filter(
+            array_keys($rows[0]),
+            fn ($col) => in_array(strtolower($col), self::SENSITIVE_COLUMN_PATTERNS, true),
+        );
+
+        $allExcluded = array_unique(array_merge($userExcluded, $autoExcluded));
+
+        if (empty($allExcluded)) {
+            return $rows;
+        }
+
+        return array_map(fn ($row) => array_diff_key($row, array_flip($allExcluded)), $rows);
     }
 
     private function syncMongo(DatabaseConnection $connection): void

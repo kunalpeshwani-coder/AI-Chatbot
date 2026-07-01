@@ -47,7 +47,7 @@ export default function ChatbotSettings({ chatbot, onUpdate }) {
                     maxLength={2000}
                     rows={10}
                     placeholder="e.g. Always greet the customer by name if known. Speak in a friendly, casual tone. Never discuss pricing — direct those questions to sales@company.com."
-                    className="w-full bg-navy-800/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-navy-400 outline-none focus:border-gold-500/50 resize-none"
+                    className="w-full bg-navy-800/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-navy-400 outline-none focus:border-gold-500/50 resize-y"
                 />
 
                 <div className="flex items-center justify-between mt-2">
