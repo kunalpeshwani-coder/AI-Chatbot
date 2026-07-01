@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
 import { updateMyChatbot } from '../../api';
 
+const DEFAULT_SCOPE_INSTRUCTIONS = {
+    true:  "Prefer the documents above when they cover the question. If a question goes beyond what the documents cover, answer it using your own general knowledge instead of refusing — just don't contradict the documents.",
+    false: "Only answer using the documents above. If the answer isn't in the documents, say you don't have that information — do not use outside knowledge or make anything up.",
+};
+
+// What to show when no instructions have been saved yet — matches what the server
+// injects automatically so the user sees the real default behaviour.
+const defaultText = (chatbot) =>
+    DEFAULT_SCOPE_INSTRUCTIONS[chatbot.allow_general_knowledge ?? true];
+
 export default function ChatbotSettings({ chatbot, onUpdate }) {
-    const [instructions, setInstructions] = useState(chatbot.instructions ?? '');
+    const initial = chatbot.instructions ?? defaultText(chatbot);
+    const [instructions, setInstructions] = useState(initial);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved]   = useState(false);
 
-    const dirty = instructions !== (chatbot.instructions ?? '');
+    // Dirty only when the displayed text differs from what was last persisted.
+    // Using `initial` as the saved baseline means the button starts disabled.
+    const [savedText, setSavedText] = useState(initial);
+    const dirty = instructions !== savedText;
 
     const handleSave = async () => {
         setSaving(true);
@@ -14,6 +28,7 @@ export default function ChatbotSettings({ chatbot, onUpdate }) {
         try {
             const updated = await updateMyChatbot(chatbot.id, { instructions });
             onUpdate?.(updated);
+            setSavedText(instructions);
             setSaved(true);
         } finally {
             setSaving(false);
