@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { updateMyChatbot } from '../../api';
 
 const SCOPE_TEXT = {
@@ -7,35 +7,33 @@ const SCOPE_TEXT = {
 };
 
 export default function ChatbotSettings({ chatbot, onUpdate }) {
-    const [allowGeneral, setAllowGeneral] = useState(chatbot.allow_general_knowledge ?? true);
     const [instructions, setInstructions] = useState(chatbot.instructions ?? SCOPE_TEXT[chatbot.allow_general_knowledge ?? true]);
-    const [saving, setSaving]   = useState(false);
-    const [saved, setSaved]     = useState(false);
+    const [saving, setSaving]     = useState(false);
+    const [saved, setSaved]       = useState(false);
     const [savedText, setSavedText] = useState(chatbot.instructions ?? SCOPE_TEXT[chatbot.allow_general_knowledge ?? true]);
-    const [savedScope, setSavedScope] = useState(chatbot.allow_general_knowledge ?? true);
 
-    const dirty = instructions !== savedText || allowGeneral !== savedScope;
+    // When the Knowledge Base toggle changes, auto-update the instruction text
+    // to the matching default so both tabs stay in sync.
+    useEffect(() => {
+        const defaultForScope = SCOPE_TEXT[chatbot.allow_general_knowledge ?? true];
+        // Only auto-update if the current text is one of the two defaults (user hasn't written
+        // something custom that doesn't match either default).
+        if (instructions === SCOPE_TEXT[true] || instructions === SCOPE_TEXT[false]) {
+            setInstructions(defaultForScope);
+            setSavedText(defaultForScope);
+            setSaved(false);
+        }
+    }, [chatbot.allow_general_knowledge]);
 
-    // When the toggle flips, replace the instruction text with the matching default
-    // so the user immediately sees what will be sent to the AI.
-    const handleToggle = () => {
-        const next = !allowGeneral;
-        setAllowGeneral(next);
-        setInstructions(SCOPE_TEXT[next]);
-        setSaved(false);
-    };
+    const dirty = instructions !== savedText;
 
     const handleSave = async () => {
         setSaving(true);
         setSaved(false);
         try {
-            const updated = await updateMyChatbot(chatbot.id, {
-                instructions,
-                allow_general_knowledge: allowGeneral,
-            });
+            const updated = await updateMyChatbot(chatbot.id, { instructions });
             onUpdate?.(updated);
             setSavedText(instructions);
-            setSavedScope(allowGeneral);
             setSaved(true);
         } finally {
             setSaving(false);
@@ -49,40 +47,12 @@ export default function ChatbotSettings({ chatbot, onUpdate }) {
                 <p className="text-xs text-navy-300 mb-4">
                     Tell your chatbot how to behave — tone, rules, things to always mention or avoid.
                     These instructions are added to every conversation alongside your knowledge base.
+                    The text below reflects your current Knowledge Base scope setting — you can edit it freely.
                 </p>
                 <p className="text-xs text-amber-300/90 mb-4 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
                     A built-in safety rule (never request payment details, passwords, or IDs) always
                     applies and can't be turned off here.
                 </p>
-
-                {/* Knowledge scope toggle */}
-                <button
-                    type="button"
-                    onClick={handleToggle}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-navy-900 border border-white/10 rounded-xl hover:border-white/20 transition text-left mb-4"
-                >
-                    <span
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
-                            allowGeneral ? 'bg-gold-600' : 'bg-navy-700'
-                        }`}
-                    >
-                        <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                allowGeneral ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                        />
-                    </span>
-                    <div className="flex-1">
-                        <p className="text-sm font-medium text-white">
-                            {allowGeneral ? 'Use outside knowledge when needed' : 'Knowledge base only'}
-                        </p>
-                        <p className="text-xs text-navy-300 mt-0.5">
-                            {allowGeneral
-                                ? 'Chatbot can go beyond documents to answer general questions'
-                                : 'Chatbot only answers from uploaded documents'}
-                        </p>
-                    </div>
-                </button>
 
                 <textarea
                     value={instructions}

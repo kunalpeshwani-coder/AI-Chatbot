@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getChatbotDocuments, uploadChatbotDocument, deleteChatbotDocument, addChatbotUrl } from '../../api';
+import { getChatbotDocuments, uploadChatbotDocument, deleteChatbotDocument, addChatbotUrl, updateMyChatbot } from '../../api';
 import DatabaseConnect from './DatabaseConnect';
 
 export default function KnowledgeBase({ chatbot, onUpdate }) {
@@ -9,7 +9,9 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
     const [dragOver, setDragOver]   = useState(false);
     const [urlInput, setUrlInput]   = useState('');
     const [addingUrl, setAddingUrl] = useState(false);
-    const [urlError, setUrlError]   = useState(null);
+    const [urlError, setUrlError]         = useState(null);
+    const [allowGeneral, setAllowGeneral] = useState(chatbot.allow_general_knowledge ?? true);
+    const [savingScope, setSavingScope]   = useState(false);
     const inputRef = useRef();
 
     useEffect(() => {
@@ -65,6 +67,21 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
         if (!confirm(`Delete "${doc.original_name}"?`)) return;
         await deleteChatbotDocument(chatbot.id, doc.id);
         setDocuments(prev => prev.filter(d => d.id !== doc.id));
+    };
+
+    const handleToggleScope = async () => {
+        const next = !allowGeneral;
+        setAllowGeneral(next);
+        setSavingScope(true);
+        try {
+            const updated = await updateMyChatbot(chatbot.id, { allow_general_knowledge: next });
+            onUpdate?.(updated);
+        } catch (err) {
+            setAllowGeneral(!next);
+            console.error(err);
+        } finally {
+            setSavingScope(false);
+        }
     };
 
     const formatSize = (bytes) => {
@@ -171,6 +188,29 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
 
             <DatabaseConnect chatbot={chatbot} onUpdate={refreshDocuments} />
 
+            {/* Answer scope toggle */}
+            <div className="border-t border-white/10 pt-5 mt-5 flex-shrink-0">
+                <button
+                    type="button"
+                    onClick={handleToggleScope}
+                    disabled={savingScope}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-navy-900 border border-white/10 rounded-xl hover:border-white/20 transition text-left disabled:opacity-60"
+                >
+                    <span className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${allowGeneral ? 'bg-gold-600' : 'bg-navy-700'}`}>
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${allowGeneral ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </span>
+                    <div className="flex-1">
+                        <p className="text-sm font-medium text-white">
+                            {allowGeneral ? 'Use outside knowledge when needed' : 'Knowledge base only'}
+                        </p>
+                        <p className="text-xs text-navy-300 mt-0.5">
+                            {allowGeneral
+                                ? 'Chatbot can go beyond documents to answer general questions'
+                                : 'Chatbot only answers from uploaded documents'}
+                        </p>
+                    </div>
+                </button>
+            </div>
         </div>
     );
 }
