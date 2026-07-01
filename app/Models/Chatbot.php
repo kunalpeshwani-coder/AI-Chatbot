@@ -108,6 +108,14 @@ class Chatbot extends Model
                     . "just don't contradict the documents."
                 : "\nOnly answer using the documents above. If the answer isn't in the documents, say you don't "
                     . "have that information — do not use outside knowledge or make anything up.";
+        } else {
+            // No documents uploaded — enforce scope setting even without a knowledge base.
+            if (!$this->allow_general_knowledge) {
+                $parts[] = "\nNo knowledge base documents have been uploaded yet. You must not answer any "
+                    . "questions using your own general knowledge. For every question, respond with: "
+                    . "\"I don't have any documents to reference yet. Please upload knowledge base documents "
+                    . "so I can answer your questions accurately.\"";
+            }
         }
 
         // Non-overridable safety guardrail — applies no matter what the owner's custom instructions
