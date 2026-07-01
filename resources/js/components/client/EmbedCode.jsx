@@ -18,11 +18,11 @@ export default function EmbedCode({ chatbot }) {
                 It adds a floating chat bubble that visitors can open to talk to your chatbot.
             </p>
 
-            <div className="relative bg-navy-900 border border-white/10 rounded-xl p-4 pr-24 font-mono text-sm text-emerald-300 overflow-x-auto mb-3">
+            <div className="relative bg-navy-950 border border-white/10 rounded-xl p-4 pr-24 font-mono text-sm text-emerald-300 overflow-x-auto mb-3">
                 <code className="whitespace-pre-wrap break-all">{snippet}</code>
                 <button
                     onClick={handleCopy}
-                    className="absolute top-3 right-3 flex-shrink-0 text-xs px-2.5 py-1.5 bg-navy-800 hover:bg-white/10 border border-white/10 rounded-lg text-navy-200 transition flex items-center gap-1.5"
+                    className="absolute top-3 right-3 flex-shrink-0 text-xs px-2.5 py-1.5 bg-navy-800 hover:bg-navy-700 border border-white/10 rounded-lg text-navy-200 transition flex items-center gap-1.5"
                 >
                     {copied ? (
                         <>

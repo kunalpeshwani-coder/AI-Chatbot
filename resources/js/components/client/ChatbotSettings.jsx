@@ -42,7 +42,7 @@ export default function ChatbotSettings({ chatbot, onUpdate }) {
 
     return (
         <div className="flex-1 overflow-y-auto pr-4">
-            <div className="max-w-2xl">
+            <div>
                 <h2 className="text-sm font-semibold text-white mb-1">Custom Instructions</h2>
                 <p className="text-xs text-navy-300 mb-4">
                     Tell your chatbot how to behave — tone, rules, things to always mention or avoid.
@@ -60,7 +60,7 @@ export default function ChatbotSettings({ chatbot, onUpdate }) {
                     maxLength={2000}
                     rows={10}
                     placeholder="e.g. Always greet the customer by name if known. Speak in a friendly, casual tone. Never discuss pricing — direct those questions to sales@company.com."
-                    className="w-full bg-navy-800/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-navy-400 outline-none focus:border-gold-500/50 resize-y"
+                    className="w-full bg-navy-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-navy-400 outline-none focus:border-gold-500/50 resize-y"
                 />
 
                 <div className="flex items-center justify-between mt-2">

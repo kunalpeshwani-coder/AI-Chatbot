@@ -39,12 +39,12 @@ export default function TestChat({ chatbot }) {
     };
 
     return (
-        <div className="h-full flex flex-col max-w-2xl">
+        <div className="h-full flex flex-col">
             <p className="text-navy-300 text-sm mb-4">
                 Try out your chatbot here. This preview isn't saved — it's just for checking how it responds.
             </p>
 
-            <div className="flex-1 flex flex-col bg-navy-900/60 border border-white/10 rounded-2xl overflow-hidden min-h-0">
+            <div className="flex-1 flex flex-col bg-navy-950 border border-white/10 rounded-2xl overflow-hidden min-h-0">
                 <div className="flex-1 overflow-y-auto px-5 py-5 pr-7 space-y-4">
                     {messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center">
@@ -67,7 +67,7 @@ export default function TestChat({ chatbot }) {
                 </div>
 
                 <div className="px-4 pb-4 pt-2 flex-shrink-0">
-                    <div className="flex items-end gap-2 bg-navy-800/80 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-gold-500 transition">
+                    <div className="flex items-end gap-2 bg-navy-800 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-gold-500 transition">
                         <textarea
                             rows={1}
                             value={input}
@@ -101,7 +101,7 @@ function Message({ message }) {
                 {isUser ? 'Y' : 'AI'}
             </div>
             <div className={`max-w-[75%] px-4 py-3 rounded-2xl ${
-                isUser ? 'bg-gold-600 text-white rounded-tr-sm' : 'bg-navy-800 border border-white/10 text-white rounded-tl-sm'
+                isUser ? 'bg-gold-600 text-white rounded-tr-sm' : 'bg-navy-950 border border-white/10 text-white rounded-tl-sm'
             }`}>
                 {isUser ? (
                     <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>

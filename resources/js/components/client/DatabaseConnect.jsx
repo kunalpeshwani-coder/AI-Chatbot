@@ -200,7 +200,7 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
             {!loading && connections.length > 0 && (
                 <div className="space-y-2 mb-4">
                     {connections.map(conn => (
-                        <div key={conn.id} className="bg-navy-900/60 border border-white/10 rounded-lg px-4 py-3">
+                        <div key={conn.id} className="bg-navy-950 border border-white/10 rounded-lg px-4 py-3">
                             <div className="flex items-center gap-3">
                                 <span className="text-xl flex-shrink-0">🗄️</span>
                                 <div className="flex-1 min-w-0">
@@ -313,12 +313,12 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
                 </div>
             )}
 
-            <form onSubmit={handleTest} className="bg-navy-900 border border-white/10 rounded-xl p-4 space-y-3">
+            <form onSubmit={handleTest} className="bg-navy-950 rounded-xl p-4 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                     <select
                         value={form.driver}
                         onChange={e => handleDriverChange(e.target.value)}
-                        className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-gold-500"
+                        className="bg-navy-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-gold-500"
                     >
                         {DRIVER_OPTIONS.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -328,7 +328,7 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
                         type="text" placeholder={isFileBased ? 'Database file path (e.g. /path/to/app.sqlite)' : 'Database name'}
                         value={form.database} required
                         onChange={e => setForm(f => ({ ...f, database: e.target.value }))}
-                        className={`bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500 ${isFileBased ? 'col-span-2' : ''}`}
+                        className={`bg-navy-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-navy-300 outline-none focus:border-gold-500 ${isFileBased ? 'col-span-2' : ''}`}
                     />
 
                     {!isFileBased && (
@@ -336,12 +336,12 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
                             <input
                                 type="text" placeholder="Host (e.g. localhost)" value={form.host} required
                                 onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
-                                className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                                className="bg-navy-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-navy-300 outline-none focus:border-gold-500"
                             />
                             <input
                                 type="number" placeholder="Port" value={form.port} required
                                 onChange={e => setForm(f => ({ ...f, port: e.target.value }))}
-                                className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                                className="bg-navy-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-navy-300 outline-none focus:border-gold-500"
                             />
                             <input
                                 key={`username-${credentialsFieldKey}`}
@@ -350,7 +350,7 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
                                 autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
                                 name="db_username_no_autofill"
                                 onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                                className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                                className="bg-navy-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-navy-300 outline-none focus:border-gold-500"
                             />
                             <input
                                 key={`password-${credentialsFieldKey}`}
@@ -358,7 +358,7 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
                                 autoComplete="new-password"
                                 name="db_password_no_autofill"
                                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                                className="bg-navy-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-navy-400 outline-none focus:border-gold-500"
+                                className="bg-navy-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-navy-300 outline-none focus:border-gold-500"
                             />
                         </>
                     )}
@@ -386,7 +386,7 @@ export default function DatabaseConnect({ chatbot, onUpdate }) {
                 <button
                     type="submit"
                     disabled={testing}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-50 rounded-lg text-sm font-medium text-navy-200 transition"
+                    className="px-4 py-2 bg-gold-600 hover:bg-gold-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition"
                 >
                     {testing ? 'Testing connection…' : 'Test Connection'}
                 </button>

@@ -88,4 +88,7 @@ Route::middleware('throttle:30,1')->group(function () {
     Route::post('/widget/{publicKey}/messages', [WidgetController::class, 'sendMessage']);
 });
 
+// Keep-alive endpoint — prevents Render free tier from sleeping
+Route::get('/ping', fn() => response()->json(['ok' => true, 'ts' => now()->toIso8601String()]));
+
 require __DIR__.'/auth.php';

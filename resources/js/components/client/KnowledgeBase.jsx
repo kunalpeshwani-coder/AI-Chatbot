@@ -97,7 +97,7 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
     };
 
     return (
-        <div className="h-full flex flex-col max-w-2xl overflow-y-auto pr-4">
+        <div className="h-full flex flex-col overflow-y-auto pr-4">
             <p className="text-navy-300 text-sm mb-5">
                 Upload documents, add a website URL, or both — your chatbot answers questions grounded in this content.
             </p>
@@ -133,7 +133,7 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
                     onChange={e => setUrlInput(e.target.value)}
                     placeholder="https://example.com/your-page"
                     disabled={addingUrl}
-                    className="flex-1 bg-navy-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-navy-300 outline-none focus:border-gold-500 disabled:opacity-60"
+                    className="flex-1 bg-navy-800 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-navy-300 outline-none focus:border-gold-500 disabled:opacity-60"
                 />
                 <button
                     type="submit"
@@ -158,7 +158,7 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
                     <p className="text-sm text-navy-300 text-center py-8">No documents uploaded yet.</p>
                 ) : (
                     documents.map(doc => (
-                        <div key={doc.id} className="flex items-center gap-3 bg-navy-900/60 border border-white/10 rounded-lg px-4 py-3">
+                        <div key={doc.id} className="flex items-center gap-3 bg-navy-800 border border-white/10 rounded-lg px-4 py-3">
                             <FileIcon type={doc.file_type} />
                             <div className="flex-1 min-w-0">
                                 {doc.source_url ? (
@@ -194,7 +194,7 @@ export default function KnowledgeBase({ chatbot, onUpdate }) {
                     type="button"
                     onClick={handleToggleScope}
                     disabled={savingScope}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-navy-900 border border-white/10 rounded-xl hover:border-white/20 transition text-left disabled:opacity-60"
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-navy-800 border border-white/10 rounded-xl hover:border-white/20 transition text-left disabled:opacity-60"
                 >
                     <span className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${allowGeneral ? 'bg-gold-600' : 'bg-navy-700'}`}>
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${allowGeneral ? 'translate-x-6' : 'translate-x-1'}`} />
