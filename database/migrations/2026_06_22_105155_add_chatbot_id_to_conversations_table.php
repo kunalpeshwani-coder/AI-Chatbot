@@ -14,15 +14,31 @@ return new class extends Migration
     {
         // Anonymous visitors chatting through an embedded public widget have no
         // logged-in user, so user_id must become nullable.
+        //
+        // The SQL is driver-specific because MySQL's MODIFY syntax is not valid
+        // on PostgreSQL or SQLite.
         match (Schema::getConnection()->getDriverName()) {
-            'pgsql' => DB::statement('ALTER TABLE conversations ALTER COLUMN user_id DROP NOT NULL'),
-            default => DB::statement('ALTER TABLE conversations MODIFY user_id BIGINT UNSIGNED NULL'),
+            'pgsql' => DB::statement(
+                'ALTER TABLE conversations ALTER COLUMN user_id DROP NOT NULL'
+            ),
+
+            'sqlite' => null,
+
+            default => DB::statement(
+                'ALTER TABLE conversations MODIFY user_id BIGINT UNSIGNED NULL'
+            ),
         };
 
         Schema::table('conversations', function (Blueprint $table) {
-            $table->foreignId('chatbot_id')->nullable()->after('domain_id')
-                ->constrained('chatbots')->cascadeOnDelete();
-            $table->string('visitor_token', 64)->nullable()->after('chatbot_id');
+            $table->foreignId('chatbot_id')
+                ->nullable()
+                ->after('domain_id')
+                ->constrained('chatbots')
+                ->cascadeOnDelete();
+
+            $table->string('visitor_token', 64)
+                ->nullable()
+                ->after('chatbot_id');
         });
     }
 
@@ -37,8 +53,15 @@ return new class extends Migration
         });
 
         match (Schema::getConnection()->getDriverName()) {
-            'pgsql' => DB::statement('ALTER TABLE conversations ALTER COLUMN user_id SET NOT NULL'),
-            default => DB::statement('ALTER TABLE conversations MODIFY user_id BIGINT UNSIGNED NOT NULL'),
+            'pgsql' => DB::statement(
+                'ALTER TABLE conversations ALTER COLUMN user_id SET NOT NULL'
+            ),
+
+            'sqlite' => null,
+
+            default => DB::statement(
+                'ALTER TABLE conversations MODIFY user_id BIGINT UNSIGNED NOT NULL'
+            ),
         };
     }
 };
