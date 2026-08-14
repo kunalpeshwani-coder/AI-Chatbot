@@ -45,9 +45,9 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
-        // Automatically authenticate the newly registered user.
-        auth()->login($user);
-
-        return redirect()->route('dashboard');
+        // Do not automatically log the user in.
+        // After registration, the user must manually log in.
+        return redirect()->route('login')
+            ->with('status', 'Registration successful! Please log in to continue.');
     }
 }
