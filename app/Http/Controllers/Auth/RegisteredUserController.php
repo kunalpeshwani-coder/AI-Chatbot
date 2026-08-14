@@ -31,7 +31,7 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name'         => ['required', 'string', 'max:255'],
-            'email'        => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email'        => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password'     => ['required', 'confirmed', Rules\Password::defaults()],
             'company_name' => ['required', 'string', 'max:255'],
         ]);
@@ -45,8 +45,9 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
-        // The client logs in themselves rather than being auto-logged-in — they then
-        // build their own chatbot from the dashboard, not pick a shared admin domain.
-        return redirect()->route('login')->with('status', 'Registration successful! Please log in to continue.');
+        // Automatically authenticate the newly registered user.
+        auth()->login($user);
+
+        return redirect()->route('dashboard');
     }
 }
